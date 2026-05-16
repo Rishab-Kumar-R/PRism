@@ -23,21 +23,34 @@ public class PullRequestHandler {
 
     @Transactional
     void onPullRequestOpened(@PullRequest.Opened GHEventPayload.PullRequest payload) throws IOException {
+        reviewPullRequest(payload);
+    }
+
+    @Transactional
+    void onPullRequestSynchronized(@PullRequest.Synchronize GHEventPayload.PullRequest payload) throws IOException {
+        reviewPullRequest(payload);
+    }
+
+    private void reviewPullRequest(GHEventPayload.PullRequest payload) throws IOException {
         var pullRequest = payload.getPullRequest();
         var repository = payload.getRepository();
 
-        String diff = gitHubService.fetchDiff(pullRequest);
-        String review = geminiReviewService.review(diff);
+        try {
+            String diff = gitHubService.fetchDiff(pullRequest);
+            String review = geminiReviewService.review(diff);
 
-        gitHubService.postReviewComment(pullRequest, review);
+            gitHubService.postReviewComment(pullRequest, review);
 
-        ReviewRecord record = new ReviewRecord(
-                gitHubService.getRepoName(repository),
-                pullRequest.getNumber(),
-                pullRequest.getTitle(),
-                review
-        );
+            ReviewRecord record = new ReviewRecord(
+                    gitHubService.getRepoName(repository),
+                    pullRequest.getNumber(),
+                    pullRequest.getTitle(),
+                    review
+            );
 
-        reviewRepository.persist(record);
+            reviewRepository.persist(record);
+        } catch (Exception e) {
+            gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
+        }
     }
 }

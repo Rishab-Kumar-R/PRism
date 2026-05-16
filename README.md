@@ -13,11 +13,11 @@ A GitHub App that automatically reviews pull requests using Google Gemini AI. Bu
 
 ## Tech Stack
 
-- **[Quarkus](https://quarkus.io/)** — Kubernetes-native Java framework
-- **[Quarkus GitHub App](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html)** — GitHub webhook handling and GitHub API
-- **[LangChain4j + Gemini](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)** — AI integration
-- **[Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)** — persistence
-- **[AWS Lambda HTTP](https://quarkus.io/guides/aws-lambda-http)** — serverless deployment
+- **[Quarkus](https://quarkus.io/)** - Kubernetes-native Java framework
+- **[Quarkus GitHub App](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html)** - GitHub webhook handling and GitHub API
+- **[LangChain4j + Gemini](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)** - AI integration
+- **[Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)** - persistence
+- **[AWS Lambda HTTP](https://quarkus.io/guides/aws-lambda-http)** - serverless deployment
 
 ## Project Structure
 
