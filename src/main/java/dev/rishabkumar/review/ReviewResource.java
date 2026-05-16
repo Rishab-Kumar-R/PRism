@@ -1,10 +1,7 @@
 package dev.rishabkumar.review;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
@@ -17,19 +14,27 @@ public class ReviewResource {
     ReviewRepository reviewRepository;
 
     @GET
-    public List<ReviewRecord> all() {
-        return reviewRepository.listAll();
+    public List<ReviewRecord> all(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size) {
+        return reviewRepository.findAll().page(page, size).list();
     }
 
     @GET
     @Path("/repo/{repoName}")
-    public List<ReviewRecord> byRepo(@PathParam("repoName") String repoName) {
-        return reviewRepository.findByRepo(repoName);
+    public List<ReviewRecord> byRepo(
+            @PathParam("repoName") String repoName,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size) {
+        return reviewRepository.find("repoName", repoName).page(page, size).list();
     }
 
     @GET
     @Path("/pr/{prNumber}")
-    public List<ReviewRecord>  byPr(@PathParam("prNumber") int prNumber) {
-        return reviewRepository.findByPrNumber(prNumber);
+    public List<ReviewRecord> byPr(
+            @PathParam("prNumber") int prNumber,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size) {
+        return reviewRepository.find("prNumber", prNumber).page(page, size).list();
     }
 }

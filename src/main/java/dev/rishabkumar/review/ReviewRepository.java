@@ -8,11 +8,7 @@ import java.util.List;
 @ApplicationScoped
 public class ReviewRepository implements PanacheRepository<ReviewRecord> {
 
-    public List<ReviewRecord> findByRepo(String repoName) {
-        return list("repoName", repoName);
-    }
-
-    public List<ReviewRecord> findByPrNumber(int prNumber) {
-        return list("prNumber", prNumber);
+    public boolean existsByRepoAndPrNumber(String repoName, int prNumber) {
+        return count("repoName = ?1 and prNumber = ?2", repoName, prNumber) > 0;
     }
 }

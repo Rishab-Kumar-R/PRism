@@ -1,6 +1,8 @@
 package dev.rishabkumar.github;
 
+import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
@@ -14,7 +16,8 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class GitHubService {
 
-    private static final int MAX_DIFF_CHARS = 50_000;
+    @ConfigProperty(name = "app.review.max-diff-chars", defaultValue = "50000")
+    int maxDiffChars;
 
     public String fetchDiff(GHPullRequest pullRequest) throws IOException {
         String diffUrl = pullRequest.getDiffUrl().toString();
@@ -32,8 +35,11 @@ public class GitHubService {
             connection.disconnect();
         }
 
-        if (diff.length() > MAX_DIFF_CHARS) {
-            return diff.substring(0, MAX_DIFF_CHARS) + "\n\n[Diff truncated - too large for review]";
+        Log.infof("Fetched diff of %d chars for PR #%d", diff.length(), pullRequest.getNumber());
+
+        if (diff.length() > maxDiffChars) {
+            Log.warnf("Diff exceeds limit (%d chars), truncating to %d", diff.length(), maxDiffChars);
+            return diff.substring(0, maxDiffChars) + "\n\n[Diff truncated - too large for review]";
         }
 
         return diff;
@@ -41,6 +47,7 @@ public class GitHubService {
 
     public void postReviewComment(GHPullRequest pullRequest, String review) throws IOException {
         pullRequest.comment(review);
+        Log.infof("Posted review comment on PR #%d", pullRequest.getNumber());
     }
 
     public String getRepoName(GHRepository repository) {

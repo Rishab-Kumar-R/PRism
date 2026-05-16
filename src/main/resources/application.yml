@@ -17,3 +17,7 @@ quarkus:
   hibernate-orm:
     schema-management:
       strategy: update
+
+app:
+  review:
+    max-diff-chars: 50000
