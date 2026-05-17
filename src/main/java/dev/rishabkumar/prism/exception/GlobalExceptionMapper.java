@@ -18,6 +18,34 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
             return wae.getResponse();
         }
 
+        if (e instanceof ReviewNotFoundException) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", "Not found", "message", e.getMessage()))
+                    .build();
+        }
+
+        if (e instanceof PrAlreadyPausedException || e instanceof PrNotPausedException) {
+            return Response.status(Response.Status.CONFLICT)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", "Conflict", "message", e.getMessage()))
+                    .build();
+        }
+
+        if (e instanceof DiffFetchException) {
+            return Response.status(Response.Status.BAD_GATEWAY)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", "Bad gateway", "message", e.getMessage()))
+                    .build();
+        }
+
+        if (e instanceof AIReviewException) {
+            return Response.status(Response.Status.BAD_GATEWAY)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", "Bad gateway", "message", e.getMessage()))
+                    .build();
+        }
+
         Log.errorf(e, "Unhandled exception: %s", e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
