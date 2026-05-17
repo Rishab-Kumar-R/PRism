@@ -7,6 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 import org.kohsuke.github.GHEvent;
 import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHRepository;
 
 import java.io.IOException;
 
@@ -21,8 +22,13 @@ public class IssueCommentHandlerTest {
     @InjectMock
     ReviewService reviewService;
 
+    @InjectMock
+    GitHubService gitHubService;
+
     @Test
     void onReviewComment_onPullRequest_triggersReview() throws IOException {
+        when(gitHubService.getRepoName(any(GHRepository.class))).thenReturn("owner/repo");
+
         given()
                 .github(mocks -> {
                     GHPullRequest pullRequest = mock(GHPullRequest.class, RETURNS_DEEP_STUBS);
@@ -31,7 +37,7 @@ public class IssueCommentHandlerTest {
                 .when().payloadFromClasspath("/github/review-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks ->
-                        verify(reviewService, timeout(2000)).review(any(), any())
+                        verify(reviewService, timeout(2000)).reviewManual(any(), any())
                 );
     }
 
@@ -41,9 +47,10 @@ public class IssueCommentHandlerTest {
                 .github(mocks -> {})
                 .when().payloadFromClasspath("/github/non-review-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
-                .then().github(mocks ->
-                        verify(reviewService, never()).review(any(), any())
-                );
+                .then().github(mocks -> {
+                        verify(reviewService, never()).review(any(), any());
+                        verify(reviewService, never()).reviewManual(any(), any());
+                });
     }
 
     @Test
@@ -52,8 +59,9 @@ public class IssueCommentHandlerTest {
                 .github(mocks -> {})
                 .when().payloadFromClasspath("/github/issue-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
-                .then().github(mocks ->
-                        verify(reviewService, never()).review(any(), any())
-                );
+                .then().github(mocks -> {
+                        verify(reviewService, never()).review(any(), any());
+                        verify(reviewService, never()).reviewManual(any(), any());
+                });
     }
 }

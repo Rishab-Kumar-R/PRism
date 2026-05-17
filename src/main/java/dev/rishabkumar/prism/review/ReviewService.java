@@ -32,8 +32,21 @@ public class ReviewService {
     @Inject
     ReviewMetrics reviewMetrics;
 
+    @Inject
+    PausedPrRepository pausedPrRepository;
+
     @Transactional
     public void review(GHPullRequest pullRequest, GHRepository repository) throws IOException {
+        review(pullRequest, repository, false);
+    }
+
+    @Transactional
+    public void reviewManual(GHPullRequest pullRequest, GHRepository repository) throws IOException {
+        review(pullRequest, repository, true);
+    }
+
+    @Transactional
+    void review(GHPullRequest pullRequest, GHRepository repository, boolean manual) throws IOException {
         String repoName = gitHubService.getRepoName(repository);
         String commitSha = pullRequest.getHead().getSha();
         int prNumber = pullRequest.getNumber();
@@ -49,6 +62,12 @@ public class ReviewService {
         if (reviewRepository.wasRecentlyReviewed(repoName, prNumber, cooldownSeconds)) {
             Log.infof("[%s#%d] Skipping - reviewed within last %ds", repoName, prNumber, cooldownSeconds);
             reviewMetrics.recordSkipped("cooldown");
+            return;
+        }
+
+        if (!manual && pausedPrRepository.isPaused(repoName, prNumber)) {
+            Log.infof("[%s#%d] Skipping - auto-review is paused", repoName, prNumber);
+            reviewMetrics.recordSkipped("paused");
             return;
         }
 

@@ -1,10 +1,13 @@
 package dev.rishabkumar.prism.github;
 
 import dev.rishabkumar.prism.ai.SummaryService;
+import dev.rishabkumar.prism.review.PausedPr;
+import dev.rishabkumar.prism.review.PausedPrRepository;
 import dev.rishabkumar.prism.review.ReviewService;
 import io.quarkiverse.githubapp.event.IssueComment;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kohsuke.github.GHEventPayload;
 import org.kohsuke.github.GHPullRequest;
@@ -23,6 +26,9 @@ public class IssueCommentHandler {
     GitHubService gitHubService;
 
     @Inject
+    PausedPrRepository pausedPrRepository;
+
+    @Inject
     ManagedExecutor executor;
 
     void onIssueComment(@IssueComment.Created GHEventPayload.IssueComment payload) throws IOException {
@@ -33,35 +39,67 @@ public class IssueCommentHandler {
 
         String command = body.trim().toLowerCase();
 
+        if (!command.equals("/review") && !command.equals("/review pause")
+                && !command.equals("/review resume") && !command.equals("/summary")) {
+            return;
+        }
+
         if (!payload.getIssue().isPullRequest()) {
             return;
         }
 
         GHPullRequest pullRequest = payload.getRepository().getPullRequest(payload.getIssue().getNumber());
-        var repository = payload.getRepository();
+        String repoName = gitHubService.getRepoName(payload.getRepository());
+        int prNumber = pullRequest.getNumber();
 
-        if (command.equals("/review")) {
-            executor.submit(() -> {
+        switch (command) {
+            case "/review" -> executor.submit(() -> {
                 try {
-                    reviewService.review(pullRequest, repository);
+                    reviewService.reviewManual(pullRequest, payload.getRepository());
                 } catch (Exception e) {
-                    Log.errorf(e, "Async /review failed for PR #%d", pullRequest.getNumber());
+                    Log.errorf(e, "[%s#%d] Async /review failed", repoName, prNumber);
                 }
             });
-        } else if (command.equals("/summary")) {
-            executor.submit(() -> {
+            case "/review pause" -> handlePause(pullRequest, repoName, prNumber);
+            case "/review resume" -> handleResume(pullRequest, repoName, prNumber);
+            case "/summary" -> executor.submit(() -> {
                 try {
-                    handleSummary(pullRequest);
+                    handleSummary(pullRequest, repoName, prNumber);
                 } catch (Exception e) {
-                    Log.errorf(e, "Async /summary failed for PR #%d", pullRequest.getNumber());
+                    Log.errorf(e, "[%s#%d] Async /summary failed", repoName, prNumber);
                 }
             });
         }
     }
 
-    private void handleSummary(GHPullRequest pullRequest) throws IOException {
-        int prNumber = pullRequest.getNumber();
-        Log.infof("PR #%d] Summary requested", prNumber);
+    @Transactional
+    void handlePause(GHPullRequest pullRequest, String repoName, int prNumber) throws IOException {
+        if (pausedPrRepository.isPaused(repoName, prNumber)) {
+            gitHubService.postReviewComment(pullRequest, "Auto-review is already paused for this PR. Use `/review resume` to re-enable it.");
+            return;
+        }
+
+        pausedPrRepository.persist(new PausedPr(repoName, prNumber));
+        Log.infof("[%s#%d] Auto-review paused", repoName, prNumber);
+        gitHubService.postReviewComment(pullRequest,
+                "Auto-review paused for this PR. PRism will no longer review new commits automatically.\n\nUse `/review resume` to re-enable, or `/review` to trigger a manual review.");
+    }
+
+    @Transactional
+    void handleResume(GHPullRequest pullRequest, String repoName, int prNumber) throws IOException {
+        if (!pausedPrRepository.isPaused(repoName, prNumber)) {
+            gitHubService.postReviewComment(pullRequest, "Auto-review is not paused for this PR.");
+            return;
+        }
+
+        pausedPrRepository.resume(repoName, prNumber);
+        Log.infof("[%s#%d] Auto-review resumed", repoName, prNumber);
+        gitHubService.postReviewComment(pullRequest,
+                "Auto-review resumed. PRism will review new commits automatically again.");
+    }
+
+    private void handleSummary(GHPullRequest pullRequest, String repoName, int prNumber) throws IOException {
+        Log.infof("[%s#%d] Summary requested", repoName, prNumber);
 
         String diff = gitHubService.fetchDiff(pullRequest);
         String summary = summaryService.summarize(diff);
@@ -81,6 +119,6 @@ public class IssueCommentHandler {
                 """.formatted(summary);
 
         gitHubService.postReviewComment(pullRequest, comment);
-        Log.infof("[PR #%d] Summary posted", prNumber);
+        Log.infof("[%s#%d] Summary posted", repoName, prNumber);
     }
 }
