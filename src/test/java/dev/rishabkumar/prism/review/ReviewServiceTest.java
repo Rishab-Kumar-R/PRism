@@ -48,7 +48,7 @@ public class ReviewServiceTest {
         CodeReview codeReview = buildCodeReview("APPROVED", 8);
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(pullRequest)).thenReturn("diff content");
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
@@ -108,7 +108,7 @@ public class ReviewServiceTest {
         CodeReview codeReview = buildCodeReview("NEEDS_WORK", 5);
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any())).thenReturn("diff content");
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
@@ -129,7 +129,7 @@ public class ReviewServiceTest {
         CodeReview codeReview = buildCodeReview("APPROVED", 9);
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any())).thenReturn("diff content");
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
@@ -145,7 +145,7 @@ public class ReviewServiceTest {
         String truncatedDiff = "x".repeat(100) + "[Diff truncated";
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any())).thenReturn(truncatedDiff);
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn(truncatedDiff);
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);

@@ -144,6 +144,7 @@ public class ReviewService {
         }
 
         Optional<ReviewRecord> previousReview = reviewRepository.findLatestByPr(repoName, prNumber);
+        String baseSha = previousReview.map(ReviewRecord::getCommitSha).orElse(null);
         String previousContext = previousReview.map(r -> """
                 Score: %d/10, Severity: %s
                 Bugs: %d, Security issues: %d, Performance issues: %d
@@ -155,14 +156,13 @@ public class ReviewService {
         )).orElse(null);
 
         if (previousContext != null) {
-            Log.infof("[%s#%d] Found previous review for context", repoName, prNumber);
+            Log.infof("[%s#%d] Found previous review at %s, fetching incremental diff", repoName, prNumber, baseSha);
         }
 
         long startMs = System.currentTimeMillis();
 
         try {
-            Log.infof("[%s#%d] Fetching diff", repoName, prNumber);
-            String diff = gitHubService.fetchDiff(pullRequest);
+            String diff = gitHubService.fetchDiff(pullRequest, baseSha);
 
             Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, diff.length());
             CodeReview codeReview = aiReviewService.review(diff, previousContext);

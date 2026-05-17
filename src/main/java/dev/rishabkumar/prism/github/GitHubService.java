@@ -20,7 +20,21 @@ public class GitHubService {
     int maxDiffChars;
 
     public String fetchDiff(GHPullRequest pullRequest) throws IOException {
-        String diffUrl = pullRequest.getDiffUrl().toString();
+        return fetchDiff(pullRequest, null);
+    }
+
+    public String fetchDiff(GHPullRequest pullRequest, String baseSha) throws IOException {
+        String diffUrl;
+
+        if (baseSha != null) {
+            String headSha = pullRequest.getHead().getSha();
+            String repoUrl = pullRequest.getRepository().getHtmlUrl().toString();
+            diffUrl = "%s/compare/%s...%s.diff".formatted(repoUrl, baseSha, headSha);
+            Log.infof("Fetching incremental diff for PR #%d: %s...%s", pullRequest.getNumber(), baseSha.substring(0, 7), headSha.substring(0, 7));
+        } else {
+            diffUrl = pullRequest.getDiffUrl().toString();
+            Log.infof("Fetching full diff for PR #%d", pullRequest.getNumber());
+        }
 
         HttpURLConnection connection = (HttpURLConnection) URI.create(diffUrl)
                 .toURL()
