@@ -1,4 +1,4 @@
-package dev.rishabkumar.ai;
+package dev.rishabkumar.prism.ai;
 
 import java.util.List;
 

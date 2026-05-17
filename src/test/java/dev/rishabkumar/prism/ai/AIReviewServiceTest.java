@@ -1,4 +1,4 @@
-package dev.rishabkumar.ai;
+package dev.rishabkumar.prism.ai;
 
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -12,17 +12,17 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
-public class GeminiReviewServiceTest {
+public class AIReviewServiceTest {
 
     @Inject
-    GeminiReviewService geminiReviewService;
+    AIReviewService aiReviewService;
 
     @InjectMock
     CodeReviewAI codeReviewAI;
 
     @Test
     void review_whenDiffIsNull_returnsNullWithoutCallingAI() {
-        CodeReview result = geminiReviewService.review(null);
+        CodeReview result = aiReviewService.review(null);
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -30,7 +30,7 @@ public class GeminiReviewServiceTest {
 
     @Test
     void review_whenDiffIsBlank_returnsNullWithoutCallingAI() {
-        CodeReview result = geminiReviewService.review("   ");
+        CodeReview result = aiReviewService.review("   ");
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -38,7 +38,7 @@ public class GeminiReviewServiceTest {
 
     @Test
     void review_whenDiffIsEmpty_returnsNullWithoutCallingAI() {
-        CodeReview result = geminiReviewService.review("");
+        CodeReview result = aiReviewService.review("");
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -48,7 +48,7 @@ public class GeminiReviewServiceTest {
     void review_whenAIReturnsNull_returnsNull() {
         when(codeReviewAI.reviewCode(anyString())).thenReturn(null);
 
-        CodeReview result = geminiReviewService.review("diff content");
+        CodeReview result = aiReviewService.review("diff content");
 
         assertNull(result);
     }
@@ -58,7 +58,7 @@ public class GeminiReviewServiceTest {
         CodeReview mockReview = buildMockReview("APPROVED", 8);
         when(codeReviewAI.reviewCode("valid diff")).thenReturn(mockReview);
 
-        CodeReview result = geminiReviewService.review("valid diff");
+        CodeReview result = aiReviewService.review("valid diff");
 
         assertNotNull(result);
         assertEquals("APPROVED", result.getSeverity());
@@ -69,7 +69,7 @@ public class GeminiReviewServiceTest {
     void review_whenValidDiff_callsAIExactlyOnce() {
         when(codeReviewAI.reviewCode(anyString())).thenReturn(buildMockReview("NEEDS_WORK", 4));
 
-        geminiReviewService.review("some diff");
+        aiReviewService.review("some diff");
 
         verify(codeReviewAI, times(1)).reviewCode("some diff");
     }
@@ -79,7 +79,7 @@ public class GeminiReviewServiceTest {
         CodeReview mockReview = buildMockReview("NEEDS_WORK", 5);
         when(codeReviewAI.reviewCode(anyString())).thenReturn(mockReview);
 
-        CodeReview result = geminiReviewService.review("diff");
+        CodeReview result = aiReviewService.review("diff");
 
         assertNotNull(result);
         assertEquals("NEEDS_WORK", result.getSeverity());

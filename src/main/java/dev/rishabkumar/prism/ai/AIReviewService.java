@@ -1,11 +1,11 @@
-package dev.rishabkumar.ai;
+package dev.rishabkumar.prism.ai;
 
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class GeminiReviewService {
+public class AIReviewService {
 
     @Inject
     CodeReviewAI codeReviewAI;
@@ -16,15 +16,15 @@ public class GeminiReviewService {
             return null;
         }
 
-        Log.info("Sending diff to Gemini for structured review");
+        Log.info("Sending diff to AI for structured review");
         CodeReview result = codeReviewAI.reviewCode(diff);
 
         if (result == null) {
-            Log.warn("Gemini returned null review");
+            Log.warn("AI returned null review");
             return null;
         }
 
-        Log.infof("Gemini review completed with score %d and severity %s",
+        Log.infof("AI review completed with score %d and severity %s",
                 result.getScore(), result.getSeverity());
         return result;
     }

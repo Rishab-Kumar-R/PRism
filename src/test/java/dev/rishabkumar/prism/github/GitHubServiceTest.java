@@ -1,4 +1,4 @@
-package dev.rishabkumar.github;
+package dev.rishabkumar.prism.github;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

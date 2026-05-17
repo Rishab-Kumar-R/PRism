@@ -1,4 +1,4 @@
-package dev.rishabkumar.security;
+package dev.rishabkumar.prism.security;
 
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;

@@ -1,4 +1,4 @@
-package dev.rishabkumar.ai;
+package dev.rishabkumar.prism.ai;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;

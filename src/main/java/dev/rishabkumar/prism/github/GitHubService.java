@@ -1,4 +1,4 @@
-package dev.rishabkumar.github;
+package dev.rishabkumar.prism.github;
 
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;

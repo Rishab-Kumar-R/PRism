@@ -1,4 +1,4 @@
-package dev.rishabkumar.review;
+package dev.rishabkumar.prism.review;
 
 public class ReviewStats {
 

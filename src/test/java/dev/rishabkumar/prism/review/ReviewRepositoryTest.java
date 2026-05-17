@@ -1,4 +1,4 @@
-package dev.rishabkumar.review;
+package dev.rishabkumar.prism.review;
 
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;

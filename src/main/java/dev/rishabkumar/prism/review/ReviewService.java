@@ -1,8 +1,8 @@
-package dev.rishabkumar.review;
+package dev.rishabkumar.prism.review;
 
-import dev.rishabkumar.ai.CodeReview;
-import dev.rishabkumar.ai.GeminiReviewService;
-import dev.rishabkumar.github.GitHubService;
+import dev.rishabkumar.prism.ai.CodeReview;
+import dev.rishabkumar.prism.ai.AIReviewService;
+import dev.rishabkumar.prism.github.GitHubService;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,7 +23,7 @@ public class ReviewService {
     GitHubService gitHubService;
 
     @Inject
-    GeminiReviewService geminiReviewService;
+    AIReviewService aiReviewService;
 
     @Inject
     ReviewRepository reviewRepository;
@@ -47,7 +47,7 @@ public class ReviewService {
 
         try {
             String diff = gitHubService.fetchDiff(pullRequest);
-            CodeReview codeReview = geminiReviewService.review(diff);
+            CodeReview codeReview = aiReviewService.review(diff);
 
             if (codeReview == null) {
                 gitHubService.postReviewComment(pullRequest, "No diff available to review.");

@@ -4,9 +4,11 @@ quarkus:
     private-key: ${GITHUB_APP_PRIVATE_KEY}
 
   langchain4j:
-    ai-gemini:
-      api-key: ${GEMINI_API_KEY}
-      model-id: ${GEMINI_MODEL_ID}
+    openai:
+      api-key: ${OPENROUTER_API_KEY}
+      base-url: https://openrouter.ai/api/v1
+      chat-model:
+        model-name: ${AI_MODEL_ID}
       timeout: 60s
 
   datasource:

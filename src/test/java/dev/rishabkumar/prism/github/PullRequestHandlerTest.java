@@ -1,6 +1,6 @@
-package dev.rishabkumar.github;
+package dev.rishabkumar.prism.github;
 
-import dev.rishabkumar.review.ReviewService;
+import dev.rishabkumar.prism.review.ReviewService;
 import io.quarkiverse.githubapp.testing.GitHubAppTest;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;

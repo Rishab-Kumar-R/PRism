@@ -1,4 +1,4 @@
-package dev.rishabkumar.review;
+package dev.rishabkumar.prism.review;
 
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;

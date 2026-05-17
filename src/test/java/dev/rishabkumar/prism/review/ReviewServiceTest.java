@@ -1,8 +1,8 @@
-package dev.rishabkumar.review;
+package dev.rishabkumar.prism.review;
 
-import dev.rishabkumar.ai.CodeReview;
-import dev.rishabkumar.ai.GeminiReviewService;
-import dev.rishabkumar.github.GitHubService;
+import dev.rishabkumar.prism.ai.CodeReview;
+import dev.rishabkumar.prism.ai.AIReviewService;
+import dev.rishabkumar.prism.github.GitHubService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -28,7 +28,7 @@ public class ReviewServiceTest {
     GitHubService gitHubService;
 
     @InjectMock
-    GeminiReviewService geminiReviewService;
+    AIReviewService aiReviewService;
 
     @Inject
     ReviewRepository reviewRepository;
@@ -47,7 +47,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(pullRequest)).thenReturn("diff content");
-        when(geminiReviewService.review("diff content")).thenReturn(codeReview);
+        when(aiReviewService.review("diff content")).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -66,7 +66,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(geminiReviewService, never()).review(anyString());
+        verify(aiReviewService, never()).review(anyString());
     }
 
     @Test
@@ -81,7 +81,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(geminiReviewService, never()).review(anyString());
+        verify(aiReviewService, never()).review(anyString());
     }
 
     @Test
@@ -107,7 +107,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn("diff content");
-        when(geminiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -128,7 +128,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn("diff content");
-        when(geminiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -144,7 +144,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn(truncatedDiff);
-        when(geminiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 

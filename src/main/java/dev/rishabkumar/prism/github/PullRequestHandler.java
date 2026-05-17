@@ -1,6 +1,6 @@
-package dev.rishabkumar.github;
+package dev.rishabkumar.prism.github;
 
-import dev.rishabkumar.review.ReviewService;
+import dev.rishabkumar.prism.review.ReviewService;
 import io.quarkiverse.githubapp.event.PullRequest;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
