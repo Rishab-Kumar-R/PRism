@@ -1,6 +1,6 @@
 package dev.rishabkumar.review;
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntity;
+import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
@@ -12,6 +12,7 @@ public class ReviewRecord extends PanacheEntity {
     private String repoName;
     private int prNumber;
     private String prTitle;
+    private String commitSha;
 
     @Column(columnDefinition = "TEXT")
     private String reviewComment;
@@ -21,10 +22,11 @@ public class ReviewRecord extends PanacheEntity {
     public ReviewRecord() {
     }
 
-    public ReviewRecord(String repoName, int prNumber, String prTitle, String reviewComment) {
+    public ReviewRecord(String repoName, int prNumber, String prTitle, String commitSha, String reviewComment) {
         this.repoName = repoName;
         this.prNumber = prNumber;
         this.prTitle = prTitle;
+        this.commitSha = commitSha;
         this.reviewComment = reviewComment;
         this.reviewedAt = LocalDateTime.now();
     }
@@ -51,6 +53,14 @@ public class ReviewRecord extends PanacheEntity {
 
     public void setPrTitle(String prTitle) {
         this.prTitle = prTitle;
+    }
+
+    public String getCommitSha() {
+        return commitSha;
+    }
+
+    public void setCommitSha(String commitSha) {
+        this.commitSha = commitSha;
     }
 
     public String getReviewComment() {

@@ -17,7 +17,7 @@ dependencies {
     implementation(enforcedPlatform("${quarkusPlatformGroupId}:quarkus-langchain4j-bom:${quarkusPlatformVersion}"))
     implementation("io.quarkus:quarkus-amazon-lambda-http")
     implementation("io.quarkus:quarkus-jdbc-h2")
-    implementation("io.quarkus:quarkus-hibernate-orm-panache-kotlin")
+    implementation("io.quarkus:quarkus-hibernate-orm-panache")
     implementation("io.quarkus:quarkus-rest-jackson")
     implementation("io.quarkiverse.githubapp:quarkus-github-app:2.14.1")
     implementation("io.quarkiverse.langchain4j:quarkus-langchain4j-ai-gemini")

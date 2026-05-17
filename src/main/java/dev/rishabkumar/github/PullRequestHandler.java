@@ -36,10 +36,11 @@ public class PullRequestHandler {
         var pullRequest = payload.getPullRequest();
         var repository = payload.getRepository();
         String repoName = gitHubService.getRepoName(repository);
+        String commitSha = pullRequest.getHead().getSha();
 
-        Log.infof("Received review request for PR #%d in %s", pullRequest.getNumber(), repoName);
+        Log.infof("Received review request for PR #%d in %s at commit %s", pullRequest.getNumber(), repoName, commitSha);
 
-        if (reviewRepository.existsByRepoAndPrNumber(repoName, pullRequest.getNumber())) {
+        if (reviewRepository.existsByCommitSha(repoName, pullRequest.getNumber(), commitSha)) {
             Log.infof("Review already exists for PR #%d in %s, skipping", pullRequest.getNumber(), repoName);
             return;
         }
@@ -54,11 +55,12 @@ public class PullRequestHandler {
                     gitHubService.getRepoName(repository),
                     pullRequest.getNumber(),
                     pullRequest.getTitle(),
+                    commitSha,
                     review
             );
 
             reviewRepository.persist(record);
-            Log.infof("Review completed and persisted for PR #%d in %s", pullRequest.getNumber(), repoName);
+            Log.infof("Review completed for commit %s on PR #%d", commitSha, pullRequest.getNumber());
         } catch (Exception e) {
             Log.errorf(e, "Failed to review PR #%d in %s", pullRequest.getNumber(), repoName);
             gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");

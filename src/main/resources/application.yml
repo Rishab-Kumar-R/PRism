@@ -4,7 +4,7 @@ quarkus:
     private-key: ${GITHUB_APP_PRIVATE_KEY}
 
   langchain4j:
-    gemini:
+    ai-gemini:
       api-key: ${GEMINI_API_KEY}
       model-id: ${GEMINI_MODEL_ID}
       timeout: 60s

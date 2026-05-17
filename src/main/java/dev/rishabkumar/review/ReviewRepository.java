@@ -1,14 +1,12 @@
 package dev.rishabkumar.review;
 
-import io.quarkus.hibernate.orm.panache.kotlin.PanacheRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
-
-import java.util.List;
 
 @ApplicationScoped
 public class ReviewRepository implements PanacheRepository<ReviewRecord> {
 
-    public boolean existsByRepoAndPrNumber(String repoName, int prNumber) {
-        return count("repoName = ?1 and prNumber = ?2", repoName, prNumber) > 0;
+    public boolean existsByCommitSha(String repoName, int prNumber, String commitSha) {
+        return count("repoName = ?1 and prNumber = ?2 and commitSha = ?3", repoName, prNumber, commitSha) > 0;
     }
 }
