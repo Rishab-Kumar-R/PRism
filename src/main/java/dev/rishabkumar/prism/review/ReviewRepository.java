@@ -3,6 +3,8 @@ package dev.rishabkumar.prism.review;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.Optional;
+
 @ApplicationScoped
 public class ReviewRepository implements PanacheRepository<ReviewRecord> {
 
@@ -63,5 +65,11 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
                 .max(java.util.Map.Entry.comparingByValue())
                 .map(java.util.Map.Entry::getKey)
                 .orElse("none");
+    }
+
+    public Optional<ReviewRecord> findLatestByPr(String repoName, int prNumber) {
+        return find("repoName = ?1 and prNumber = ?2 order by reviewedAt desc",
+                repoName, prNumber)
+                .firstResultOptional();
     }
 }

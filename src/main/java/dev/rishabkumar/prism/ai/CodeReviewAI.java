@@ -5,9 +5,7 @@ import dev.langchain4j.service.UserMessage;
 import io.quarkiverse.langchain4j.RegisterAiService;
 
 @RegisterAiService
-public interface CodeReviewAI {
-
-    @SystemMessage("""
+@SystemMessage("""
             <role>
                 You are a senior software engineer and expert code reviewer with deep knowledge
                 of software design patterns, security, and best practices.
@@ -35,5 +33,7 @@ public interface CodeReviewAI {
                 fullReview must be thorough, constructive, and specific with examples where possible.
             </rules>
             """)
+public interface CodeReviewAI {
+
     CodeReview reviewCode(@UserMessage String diff);
 }

@@ -12,6 +12,7 @@ import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @ApplicationScoped
 public class ReviewService {
@@ -51,6 +52,21 @@ public class ReviewService {
             return;
         }
 
+        Optional<ReviewRecord> previousReview = reviewRepository.findLatestByPr(repoName, prNumber);
+        String previousContext = previousReview.map(r -> """
+                Score: %d/10, Severity: %s
+                Bugs: %d, Security issues: %d, Performance issues: %d
+                Recommendation: %s
+                """.formatted(
+                r.getScore(), r.getSeverity(),
+                r.getBugCount(), r.getSecurityCount(), r.getPerformanceCount(),
+                r.getRecommendation()
+        )).orElse(null);
+
+        if (previousContext != null) {
+            Log.infof("[%s#%d] Found previous review for context", repoName, prNumber);
+        }
+
         long startMs = System.currentTimeMillis();
 
         try {
@@ -58,7 +74,7 @@ public class ReviewService {
             String diff = gitHubService.fetchDiff(pullRequest);
 
             Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, diff.length());
-            CodeReview codeReview = aiReviewService.review(diff);
+            CodeReview codeReview = aiReviewService.review(diff, previousContext);
 
             if (codeReview == null) {
                 Log.warnf("[%s#%d] AI returned null review - posting fallback comment", repoName, prNumber);

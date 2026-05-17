@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
@@ -47,7 +49,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(pullRequest)).thenReturn("diff content");
-        when(aiReviewService.review("diff content")).thenReturn(codeReview);
+        when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -66,7 +68,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(aiReviewService, never()).review(anyString());
+        verify(aiReviewService, never()).review(anyString(), any());
     }
 
     @Test
@@ -81,7 +83,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(aiReviewService, never()).review(anyString());
+        verify(aiReviewService, never()).review(anyString(), any());
     }
 
     @Test
@@ -107,7 +109,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn("diff content");
-        when(aiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -128,7 +130,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn("diff content");
-        when(aiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
@@ -144,7 +146,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any())).thenReturn(truncatedDiff);
-        when(aiReviewService.review(anyString())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
         reviewService.review(pullRequest, repository);
 
