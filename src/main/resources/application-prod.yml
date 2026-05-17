@@ -1,0 +1,4 @@
+quarkus:
+  log:
+    console:
+      json: true

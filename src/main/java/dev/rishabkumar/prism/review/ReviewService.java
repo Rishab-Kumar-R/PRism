@@ -28,29 +28,42 @@ public class ReviewService {
     @Inject
     ReviewRepository reviewRepository;
 
+    @Inject
+    ReviewMetrics reviewMetrics;
+
     @Transactional
     public void review(GHPullRequest pullRequest, GHRepository repository) throws IOException {
         String repoName = gitHubService.getRepoName(repository);
         String commitSha = pullRequest.getHead().getSha();
+        int prNumber = pullRequest.getNumber();
 
-        Log.infof("Received review request for PR #%d in %s at commit %s", pullRequest.getNumber(), repoName, commitSha);
+        Log.infof("[%s#%d] Review requested for commit %s", repoName, prNumber, commitSha);
 
-        if (reviewRepository.existsByCommitSha(repoName, pullRequest.getNumber(), commitSha)) {
-            Log.infof("Review already exists for commit %s on PR #%d, skipping", commitSha, pullRequest.getNumber());
+        if (reviewRepository.existsByCommitSha(repoName, prNumber, commitSha)) {
+            Log.infof("[%s#%d] Skipping - commit %s already reviewed", repoName, prNumber, commitSha);
+            reviewMetrics.recordSkipped("duplicate-commit");
             return;
         }
 
-        if (reviewRepository.wasRecentlyReviewed(repoName, pullRequest.getNumber(), cooldownSeconds)) {
-            Log.infof("Rate limit: PR #%d in %s was reviewed in the last 60 seconds, skipping", pullRequest.getNumber(), repoName);
+        if (reviewRepository.wasRecentlyReviewed(repoName, prNumber, cooldownSeconds)) {
+            Log.infof("[%s#%d] Skipping - reviewed within last %ds", repoName, prNumber, cooldownSeconds);
+            reviewMetrics.recordSkipped("cooldown");
             return;
         }
+
+        long startMs = System.currentTimeMillis();
 
         try {
+            Log.infof("[%s#%d] Fetching diff", repoName, prNumber);
             String diff = gitHubService.fetchDiff(pullRequest);
+
+            Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, diff.length());
             CodeReview codeReview = aiReviewService.review(diff);
 
             if (codeReview == null) {
+                Log.warnf("[%s#%d] AI returned null review - posting fallback comment", repoName, prNumber);
                 gitHubService.postReviewComment(pullRequest, "No diff available to review.");
+                reviewMetrics.recordError(repoName, System.currentTimeMillis() - startMs);
                 return;
             }
 
@@ -60,24 +73,22 @@ public class ReviewService {
             gitHubService.applyLabel(pullRequest, codeReview.getSeverity(), wasLargePr);
 
             ReviewRecord record = new ReviewRecord(
-                    repoName,
-                    pullRequest.getNumber(),
-                    pullRequest.getTitle(),
-                    commitSha,
-                    codeReview.getSeverity(),
-                    codeReview.getScore(),
-                    codeReview.getBugCount(),
-                    codeReview.getSecurityCount(),
-                    codeReview.getPerformanceCount(),
-                    codeReview.getCodeQualityCount(),
-                    codeReview.getRecommendation(),
-                    codeReview.getFullReview()
+                    repoName, prNumber, pullRequest.getTitle(), commitSha,
+                    codeReview.getSeverity(), codeReview.getScore(),
+                    codeReview.getBugCount(), codeReview.getSecurityCount(),
+                    codeReview.getPerformanceCount(), codeReview.getCodeQualityCount(),
+                    codeReview.getRecommendation(), codeReview.getFullReview()
             );
             reviewRepository.persist(record);
 
-            Log.infof("Review completed - score: %d, severity: %s, commit: %s", codeReview.getScore(), codeReview.getSeverity(), commitSha);
+            long duration = System.currentTimeMillis() - startMs;
+            Log.infof("[%s#%d] Review complete - score: %d, severity: %s, duration: %dms",
+                    repoName, prNumber, codeReview.getScore(), codeReview.getSeverity(), duration);
+            reviewMetrics.recordSuccess(repoName, duration);
         } catch (Exception e) {
-            Log.errorf(e, "Failed to review PR #%d in %s", pullRequest.getNumber(), repoName);
+            long duration = System.currentTimeMillis() - startMs;
+            Log.errorf(e, "[%s#%d] Review failed after %dms - posting fallback comment", repoName, prNumber, duration);
+            reviewMetrics.recordError(repoName, duration);
             gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
         }
     }

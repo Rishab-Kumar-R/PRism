@@ -26,6 +26,8 @@ dependencies {
     implementation("io.quarkus:quarkus-arc")
     implementation("io.quarkus:quarkus-hibernate-orm")
     implementation("io.quarkus:quarkus-rest")
+    implementation("io.quarkus:quarkus-logging-json")
+    implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkiverse.githubapp:quarkus-github-app-testing:2.14.1")
     testImplementation("io.quarkus:quarkus-junit5-mockito")
