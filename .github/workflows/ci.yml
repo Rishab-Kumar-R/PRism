@@ -39,6 +39,12 @@ jobs:
             github-app:
               app-id: 1
               private-key: "$KEY"
+            langchain4j:
+              openai:
+                api-key: test-api-key
+                base-url: https://openrouter.ai/api/v1
+                chat-model:
+                  model-name: openai/gpt-oss-120b:free
             datasource:
               jdbc:
                 url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
