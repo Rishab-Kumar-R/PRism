@@ -3,6 +3,7 @@ package dev.rishabkumar.prism.review;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -71,5 +72,22 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
         return find("repoName = ?1 and prNumber = ?2 order by reviewedAt desc",
                 repoName, prNumber)
                 .firstResultOptional();
+    }
+
+    public List<ReviewRecord> findByRepo(String repoName, int page, int size) {
+        return find("repoName = ?1 order by reviewedAt desc", repoName).page(page, size).list();
+    }
+
+    public List<ReviewRecord> findByPr(int prNumber, int page, int size) {
+        return find("prNumber = ?1 order by reviewedAt desc", prNumber).page(page, size).list();
+    }
+
+    public List<ReviewRecord> findByRepoAndPr(String repoName, int prNumber, int page, int size) {
+        return find("repoName = ?1 and prNumber = ?2 order by reviewedAt desc", repoName, prNumber)
+                .page(page, size).list();
+    }
+
+    public List<ReviewRecord> findAllPaged(int page, int size) {
+        return findAll().page(page, size).list();
     }
 }

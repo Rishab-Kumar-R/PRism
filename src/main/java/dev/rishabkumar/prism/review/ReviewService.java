@@ -7,11 +7,13 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.NotFoundException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -34,6 +36,76 @@ public class ReviewService {
 
     @Inject
     PausedPrRepository pausedPrRepository;
+
+    @Transactional
+    public void pause(GHPullRequest pullRequest, GHRepository repository) throws IOException {
+        String repoName = gitHubService.getRepoName(repository);
+        int prNumber = pullRequest.getNumber();
+
+        if (pausedPrRepository.isPaused(repoName, prNumber)) {
+            gitHubService.postReviewComment(pullRequest,
+                    "Auto-review is already paused for this PR. Use `/review resume` to re-enable it.");
+            return;
+        }
+
+        pausedPrRepository.persist(new PausedPr(repoName, prNumber));
+        Log.infof("[%s#%d] Auto-review paused", repoName, prNumber);
+        gitHubService.postReviewComment(pullRequest,
+                "Auto-review paused for this PR. PRism will no longer review new commits automatically.\n\nUse `/review resume` to re-enable, or `/review` to trigger a manual review.");
+    }
+
+    @Transactional
+    public void resume(GHPullRequest pullRequest, GHRepository repository) throws IOException {
+        String repoName = gitHubService.getRepoName(repository);
+        int prNumber = pullRequest.getNumber();
+
+        if (!pausedPrRepository.isPaused(repoName, prNumber)) {
+            gitHubService.postReviewComment(pullRequest, "Auto-review is not paused for this PR.");
+            return;
+        }
+
+        pausedPrRepository.resume(repoName, prNumber);
+        Log.infof("[%s#%d] Auto-review resumed", repoName, prNumber);
+        gitHubService.postReviewComment(pullRequest,
+                "Auto-review resumed. PRism will review new commits automatically again.");
+    }
+
+    public List<ReviewRecord> getAll(int page, int size) {
+        return reviewRepository.findAllPaged(page, size);
+    }
+
+    public ReviewRecord getById(Long id) {
+        ReviewRecord record = reviewRepository.findById(id);
+        if (record == null) {
+            throw new NotFoundException("Review not found: " + id);
+        }
+        return record;
+    }
+
+    public List<ReviewRecord> getByRepo(String repoName, int page, int size) {
+        return reviewRepository.findByRepo(repoName, page, size);
+    }
+
+    public List<ReviewRecord> getByPr(int prNumber, int page, int size) {
+        return reviewRepository.findByPr(prNumber, page, size);
+    }
+
+    public List<ReviewRecord> getByRepoAndPr(String repoName, int prNumber, int page, int size) {
+        return reviewRepository.findByRepoAndPr(repoName, prNumber, page, size);
+    }
+
+    public ReviewStats getStats() {
+        return new ReviewStats(
+                reviewRepository.count(),
+                reviewRepository.countApproved(),
+                reviewRepository.countNeedsWork(),
+                reviewRepository.averageScore(),
+                reviewRepository.totalBugs(),
+                reviewRepository.totalSecurityIssues(),
+                reviewRepository.totalPerformanceIssues(),
+                reviewRepository.mostReviewedRepo()
+        );
+    }
 
     @Transactional
     public void review(GHPullRequest pullRequest, GHRepository repository) throws IOException {
