@@ -1,5 +1,6 @@
 package dev.rishabkumar.github;
 
+import dev.rishabkumar.ai.CodeReview;
 import dev.rishabkumar.ai.GeminiReviewService;
 import dev.rishabkumar.review.ReviewRecord;
 import dev.rishabkumar.review.ReviewRepository;
@@ -42,24 +43,35 @@ public class IssueCommentHandler {
 
         try {
             String diff = gitHubService.fetchDiff(pullRequest);
-            String review = geminiReviewService.review(diff);
+            CodeReview review = geminiReviewService.review(diff);
 
-            gitHubService.postReviewComment(pullRequest, review);
+            if (review == null) {
+                gitHubService.postReviewComment(pullRequest, "No diff available to review.");
+                return;
+            }
+
+            gitHubService.postReviewComment(pullRequest, review.getFullReview());
 
             boolean wasLargePr = diff.contains("[Diff truncated");
-            String severity = geminiReviewService.assessSeverity(review);
-            gitHubService.applyLabel(pullRequest, severity, wasLargePr);
+            gitHubService.applyLabel(pullRequest, review.getSeverity(), wasLargePr);
 
             ReviewRecord record = new ReviewRecord(
                     repoName,
                     pullRequest.getNumber(),
                     pullRequest.getTitle(),
                     commitSha,
-                    review
+                    review.getSeverity(),
+                    review.getScore(),
+                    review.getBugCount(),
+                    review.getSecurityCount(),
+                    review.getPerformanceCount(),
+                    review.getCodeQualityCount(),
+                    review.getRecommendation(),
+                    review.getFullReview()
             );
             reviewRepository.persist(record);
 
-            Log.infof("Manual review completed for PR #%d in %s", pullRequest.getNumber(), repoName);
+            Log.infof("Manual review completed - score: %d, severity: %s", review.getScore(), review.getSeverity());
         } catch (Exception e) {
             Log.errorf(e, "Failed manual review for PR #%d in %s", pullRequest.getNumber(), repoName);
             gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");

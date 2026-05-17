@@ -10,20 +10,22 @@ public class GeminiReviewService {
     @Inject
     CodeReviewAI codeReviewAI;
 
-    public String review(String diff) {
+    public CodeReview review(String diff) {
         if (diff == null || diff.isBlank()) {
             Log.warn("Empty or null diff received, skipping review");
-            return "No diff available to review.";
+            return null;
         }
 
-        Log.info("Sending diff to Gemini for review");
-        String result = codeReviewAI.reviewCode(diff);
-        Log.info("Gemini review completed");
-        return result;
-    }
+        Log.info("Sending diff to Gemini for structured review");
+        CodeReview result = codeReviewAI.reviewCode(diff);
 
-    public String assessSeverity(String review) {
-        Log.info("Assessing review severity");
-        return codeReviewAI.assessSeverity(review).trim().toUpperCase();
+        if (result == null) {
+            Log.warn("Gemini returned null review");
+            return null;
+        }
+
+        Log.infof("Gemini review completed with score %d and severity %s",
+                result.getScore(), result.getSeverity());
+        return result;
     }
 }

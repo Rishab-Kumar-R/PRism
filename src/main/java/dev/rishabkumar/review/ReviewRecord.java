@@ -13,6 +13,13 @@ public class ReviewRecord extends PanacheEntity {
     private int prNumber;
     private String prTitle;
     private String commitSha;
+    private String severity;
+    private int score;
+    private int bugCount;
+    private int securityCount;
+    private int performanceCount;
+    private int codeQualityCount;
+    private String recommendation;
 
     @Column(columnDefinition = "TEXT")
     private String reviewComment;
@@ -22,11 +29,21 @@ public class ReviewRecord extends PanacheEntity {
     public ReviewRecord() {
     }
 
-    public ReviewRecord(String repoName, int prNumber, String prTitle, String commitSha, String reviewComment) {
+    public ReviewRecord(String repoName, int prNumber, String prTitle, String commitSha,
+                        String severity, int score, int bugCount, int securityCount,
+                        int performanceCount, int codeQualityCount,
+                        String recommendation, String reviewComment) {
         this.repoName = repoName;
         this.prNumber = prNumber;
         this.prTitle = prTitle;
         this.commitSha = commitSha;
+        this.severity = severity;
+        this.score = score;
+        this.bugCount = bugCount;
+        this.securityCount = securityCount;
+        this.performanceCount = performanceCount;
+        this.codeQualityCount = codeQualityCount;
+        this.recommendation = recommendation;
         this.reviewComment = reviewComment;
         this.reviewedAt = LocalDateTime.now();
     }
@@ -61,6 +78,62 @@ public class ReviewRecord extends PanacheEntity {
 
     public void setCommitSha(String commitSha) {
         this.commitSha = commitSha;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getBugCount() {
+        return bugCount;
+    }
+
+    public void setBugCount(int bugCount) {
+        this.bugCount = bugCount;
+    }
+
+    public int getSecurityCount() {
+        return securityCount;
+    }
+
+    public void setSecurityCount(int securityCount) {
+        this.securityCount = securityCount;
+    }
+
+    public int getPerformanceCount() {
+        return performanceCount;
+    }
+
+    public void setPerformanceCount(int performanceCount) {
+        this.performanceCount = performanceCount;
+    }
+
+    public int getCodeQualityCount() {
+        return codeQualityCount;
+    }
+
+    public void setCodeQualityCount(int codeQualityCount) {
+        this.codeQualityCount = codeQualityCount;
+    }
+
+    public String getRecommendation() {
+        return recommendation;
+    }
+
+    public void setRecommendation(String recommendation) {
+        this.recommendation = recommendation;
     }
 
     public String getReviewComment() {

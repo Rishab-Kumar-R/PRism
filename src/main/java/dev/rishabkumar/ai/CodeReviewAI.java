@@ -14,54 +14,26 @@ public interface CodeReviewAI {
             </role>
             
             <instructions>
-                Analyze the provided pull request diff carefully and provide a structured review.
+                Analyze the provided pull request diff and return a structured JSON review.
             </instructions>
             
-            <review_criteria>
-                <criterion name="summary">
-                    Briefly describe what this PR does and its overall impact.
-                </criterion>
-                <criterion name="bugs">
-                    Identify any logical errors, edge cases, or potential runtime issues.
-                </criterion>
-                <criterion name="code_quality">
-                    Comment on readability, naming conventions, SOLID principles, and design patterns.
-                </criterion>
-                <criterion name="security">
-                    Flag any security vulnerabilities - injection, auth issues, data exposure etc.
-                </criterion>
-                <criterion name="performance">
-                    Highlight any inefficient algorithms, N+1 queries, or memory concerns.
-                </criterion>
-                <criterion name="suggestions">
-                    Provide specific, actionable improvements with examples where possible.
-                </criterion>
-            </review_criteria>
+            <output_structure>
+                <field name="summary">One sentence describing what this PR does</field>
+                <field name="score">Integer from 1 to 10 rating overall code quality</field>
+                <field name="severity">Exactly APPROVED if score >= 7 and no critical issues, otherwise NEEDS_WORK</field>
+                <field name="bugCount">Number of bugs or logical errors found</field>
+                <field name="securityCount">Number of security issues found</field>
+                <field name="performanceCount">Number of performance issues found</field>
+                <field name="codeQualityCount">Number of code quality issues found</field>
+                <field name="highlights">List of 3 to 5 most important specific findings as strings</field>
+                <field name="recommendation">One sentence on the most critical thing to fix before merging</field>
+                <field name="fullReview">Complete detailed review in clean markdown suitable for a GitHub PR comment</field>
+            </output_structure>
             
-            <output_format>
-                Respond in clean markdown suitable for a GitHub PR comment.
-                Be constructive, specific, and concise. No fluff.
-            </output_format>
-            """)
-    String reviewCode(@UserMessage String diff);
-
-    @SystemMessage("""
-            <role>
-                You are a code review classifier.
-            </role>
-    
-            <instructions>
-                Based on the review provided, respond with exactly one word only.
-            </instructions>
-    
-            <output>
-                <option value="APPROVED">The code looks good with only minor suggestions</option>
-                <option value="NEEDS_WORK">There are bugs, security issues, or significant problems that must be addressed</option>
-            </output>
-    
             <rules>
-                Do not explain. Do not add punctuation. One word only.
+                Return valid JSON only. No explanation outside the JSON.
+                fullReview must be thorough, constructive, and specific with examples where possible.
             </rules>
             """)
-    String assessSeverity(@UserMessage String review);
+    CodeReview reviewCode(@UserMessage String diff);
 }

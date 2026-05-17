@@ -3,6 +3,7 @@ package dev.rishabkumar.review;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 
@@ -21,6 +22,18 @@ public class ReviewResource {
     }
 
     @GET
+    @Path("/{id}")
+    public Response byId(@PathParam("id") Long id) {
+        ReviewRecord record = reviewRepository.findById(id);
+
+        if (record == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
+        return Response.ok(record).build();
+    }
+
+    @GET
     @Path("/repo/{repoName}")
     public List<ReviewRecord> byRepo(
             @PathParam("repoName") String repoName,
@@ -36,5 +49,20 @@ public class ReviewResource {
             @QueryParam("page") @DefaultValue("0") int page,
             @QueryParam("size") @DefaultValue("20") int size) {
         return reviewRepository.find("prNumber", prNumber).page(page, size).list();
+    }
+
+    @GET
+    @Path("/stats")
+    public ReviewStats stats() {
+        return new ReviewStats(
+                reviewRepository.count(),
+                reviewRepository.countApproved(),
+                reviewRepository.countNeedsWork(),
+                reviewRepository.averageScore(),
+                reviewRepository.totalBugs(),
+                reviewRepository.totalSecurityIssues(),
+                reviewRepository.totalPerformanceIssues(),
+                reviewRepository.mostReviewedRepo()
+        );
     }
 }

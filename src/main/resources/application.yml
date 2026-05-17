@@ -19,5 +19,7 @@ quarkus:
       strategy: update
 
 app:
+  security:
+    api-key: ${API_KEY}
   review:
     max-diff-chars: 50000
