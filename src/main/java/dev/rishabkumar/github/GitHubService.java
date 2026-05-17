@@ -50,6 +50,33 @@ public class GitHubService {
         Log.infof("Posted review comment on PR #%d", pullRequest.getNumber());
     }
 
+    public void applyLabel(GHPullRequest pullRequest, String severity, boolean wasLargePr) throws IOException {
+        GHRepository repository = pullRequest.getRepository();
+
+        String labelName;
+        String labelColor;
+
+        if (wasLargePr) {
+            labelName = "ai: large-pr";
+            labelColor = "FFA500";
+        } else if ("APPROVED".equals(severity)) {
+            labelName = "ai: approved";
+            labelColor = "0075ca";
+        } else {
+            labelName = "ai: needs-work";
+            labelColor = "e11d48";
+        }
+
+        try {
+            repository.createLabel(labelName, labelColor);
+        } catch (Exception e) {
+            // label already exists, safe to ignore
+        }
+
+        pullRequest.addLabels(labelName);
+        Log.infof("Applied label '%s' to PR #%d", labelName, pullRequest.getNumber());
+    }
+
     public String getRepoName(GHRepository repository) {
         return repository.getFullName();
     }

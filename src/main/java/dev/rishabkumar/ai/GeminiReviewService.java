@@ -21,4 +21,9 @@ public class GeminiReviewService {
         Log.info("Gemini review completed");
         return result;
     }
+
+    public String assessSeverity(String review) {
+        Log.info("Assessing review severity");
+        return codeReviewAI.assessSeverity(review).trim().toUpperCase();
+    }
 }

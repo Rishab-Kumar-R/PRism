@@ -46,6 +46,10 @@ public class IssueCommentHandler {
 
             gitHubService.postReviewComment(pullRequest, review);
 
+            boolean wasLargePr = diff.contains("[Diff truncated");
+            String severity = geminiReviewService.assessSeverity(review);
+            gitHubService.applyLabel(pullRequest, severity, wasLargePr);
+
             ReviewRecord record = new ReviewRecord(
                     repoName,
                     pullRequest.getNumber(),
