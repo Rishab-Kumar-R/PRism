@@ -1,11 +1,11 @@
-# AI Code Reviewer
+# PRism
 
-![CI](https://github.com/Rishab-Kumar-R/ai-code-reviewer/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Rishab-Kumar-R/PRism/actions/workflows/ci.yml/badge.svg)
 ![Java](https://img.shields.io/badge/Java-21-orange)
 ![Quarkus](https://img.shields.io/badge/Quarkus-3.35.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-A GitHub App that automatically reviews pull requests using Google Gemini AI. Detects bugs, security issues, and code quality problems - then posts a structured review comment directly on the PR.
+A GitHub App that automatically reviews pull requests using AI. Detects bugs, security issues, and code quality problems - then posts a structured review comment directly on the PR.
 
 [//]: # (## Demo)
 
@@ -34,7 +34,7 @@ A GitHub App that automatically reviews pull requests using Google Gemini AI. De
 - **Diff size limit** - large PRs are truncated gracefully with a notice
 - **PR labels** - auto-applies labels based on review outcome
 - **Review history API** - paginated REST endpoints to query past reviews and stats
-- **Error handling** - posts a fallback comment if Gemini is unavailable
+- **Error handling** - posts a fallback comment if the AI is unavailable
 
 ## How It Works
 
@@ -45,9 +45,9 @@ GitHub sends webhook to the app
               ↓
 Fetch PR diff from GitHub
               ↓
-Send diff to Gemini AI
+Send diff to AI (via OpenRouter)
               ↓
-Gemini returns structured review (score, severity, issues, full markdown)
+AI returns structured review (score, severity, issues, full markdown)
               ↓
 Post review comment on PR + apply label
               ↓
@@ -60,20 +60,19 @@ Save review record to database
 |--------------------|--------------------------------------------------------------------------------------------------------|
 | Framework          | [Quarkus 3.35](https://quarkus.io/)                                                                    |
 | GitHub Integration | [Quarkus GitHub App](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html) |
-| AI                 | [LangChain4j + Google Gemini](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)          |
+| AI                 | [LangChain4j + OpenRouter](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)             |
 | Persistence        | [Hibernate ORM with Panache](https://quarkus.io/guides/hibernate-orm-panache)                          |
 | Database           | H2 (dev) / PostgreSQL (prod)                                                                           |
-| Deployment         | [AWS Lambda HTTP](https://quarkus.io/guides/aws-lambda-http)                                           |
 | Testing            | JUnit 5 + RestAssured + Mockito                                                                        |
 
 ## Project Structure
 
 ```
-src/main/java/dev/rishabkumar/
+src/main/java/dev/rishabkumar/prism/
 ├── ai/
 │   ├── CodeReview.java              # Structured AI response object
 │   ├── CodeReviewAI.java            # LangChain4j AI service interface
-│   └── GeminiReviewService.java     # Gemini wrapper service
+│   └── AIReviewService.java         # AI wrapper service
 ├── github/
 │   ├── GitHubService.java           # Fetch diff, post comments, apply labels
 │   ├── PullRequestHandler.java      # Webhook event listener (open + sync)
@@ -125,14 +124,14 @@ All list endpoints support `?page=0&size=20` query params.
 
 - Java 21
 - A [GitHub App](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app) with Pull Request and Issue Comment read/write permissions
-- A [Gemini API key](https://aistudio.google.com/app/apikey)
+- An [OpenRouter API key](https://openrouter.ai) (free tier available)
 
 ## Setup
 
 **1. Clone the repo**
 ```bash
-git clone https://github.com/Rishab-Kumar-R/ai-code-reviewer.git
-cd ai-code-reviewer
+git clone https://github.com/Rishab-Kumar-R/PRism.git
+cd PRism
 ```
 
 **2. Create your `.env` file**
@@ -142,21 +141,14 @@ cp .env.example .env
 
 Fill in your values:
 ```properties
-GEMINI_API_KEY=your_gemini_api_key
-GEMINI_MODEL_ID=gemini-2.0-flash
+OPENROUTER_API_KEY=your_openrouter_api_key
+AI_MODEL_ID=openai/gpt-oss-120b:free
 GITHUB_APP_ID=your_github_app_id
 GITHUB_APP_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\nyour_key_here\n-----END RSA PRIVATE KEY-----
 API_KEY=your_strong_secret_key
 ```
 
-**3. Create test config**
-```bash
-openssl genrsa 2048 | awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' > /tmp/test-key.txt
-```
-
-Create `src/main/resources/application-test.yml` with the generated key (see CI workflow for format).
-
-**4. Run locally**
+**3. Run locally**
 ```bash
 ./gradlew quarkusDev
 ```
@@ -167,19 +159,12 @@ Create `src/main/resources/application-test.yml` with the generated key (see CI 
 ./gradlew test
 ```
 
-48 tests covering all layers — REST endpoints, repository queries, AI service, GitHub service, and the full review flow.
+58 tests covering all layers — REST endpoints, repository queries, AI service, GitHub service, and the full review flow.
 
 ## Building
 
 ```bash
 ./gradlew build
-```
-
-## Deploying to AWS Lambda
-
-```bash
-./gradlew build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
-sam deploy
 ```
 
 ## GitHub App Permissions Required
