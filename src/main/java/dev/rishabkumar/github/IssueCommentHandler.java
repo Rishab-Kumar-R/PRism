@@ -1,15 +1,11 @@
 package dev.rishabkumar.github;
 
-import dev.rishabkumar.ai.CodeReview;
-import dev.rishabkumar.ai.GeminiReviewService;
-import dev.rishabkumar.review.ReviewRecord;
-import dev.rishabkumar.review.ReviewRepository;
 import dev.rishabkumar.review.ReviewService;
 import io.quarkiverse.githubapp.event.IssueComment;
 import io.quarkus.logging.Log;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kohsuke.github.GHEventPayload;
-import org.kohsuke.github.GHPullRequest;
 
 import java.io.IOException;
 
@@ -18,19 +14,28 @@ public class IssueCommentHandler {
     @Inject
     ReviewService reviewService;
 
-    void onIssueComment(@IssueComment.Created GHEventPayload.IssueComment payload) throws IOException {
-        String body = payload.getComment().getBody().trim();
+    @Inject
+    ManagedExecutor executor;
 
-        if (!body.equalsIgnoreCase("/review")) {
+    void onIssueComment(@IssueComment.Created GHEventPayload.IssueComment payload) throws IOException {
+        String body = payload.getComment().getBody();
+        if (body == null || !body.trim().equalsIgnoreCase("/review")) {
             return;
         }
 
         if (!payload.getIssue().isPullRequest()) {
-            Log.info("Received /review on an issue, not a PR - skipping");
             return;
         }
 
-        GHPullRequest pullRequest = payload.getRepository().getPullRequest(payload.getIssue().getNumber());
-        reviewService.review(pullRequest, payload.getRepository());
+        var pullRequest = payload.getRepository().getPullRequest(payload.getIssue().getNumber());
+        var repository = payload.getRepository();
+
+        executor.submit(() -> {
+            try {
+                reviewService.review(pullRequest, repository);
+            } catch (Exception e) {
+                Log.errorf(e, "Async /review failed for PR #%d", pullRequest.getNumber());
+            }
+        });
     }
 }

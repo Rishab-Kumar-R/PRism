@@ -1,0 +1,46 @@
+{
+  "action": "created",
+  "issue": {
+    "number": 5,
+    "title": "Some bug report",
+    "state": "open",
+    "user": {
+      "login": "user",
+      "id": 1,
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "comment": {
+    "id": 102,
+    "body": "/review",
+    "user": {
+      "login": "user",
+      "id": 1,
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "repository": {
+    "id": 1,
+    "name": "repo",
+    "full_name": "owner/repo",
+    "private": false,
+    "owner": {
+      "login": "owner",
+      "id": 2,
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "sender": {
+    "login": "user",
+    "id": 1,
+    "type": "User",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 1,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMQ=="
+  }
+}

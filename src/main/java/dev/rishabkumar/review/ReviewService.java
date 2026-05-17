@@ -7,6 +7,7 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
@@ -14,6 +15,9 @@ import java.io.IOException;
 
 @ApplicationScoped
 public class ReviewService {
+
+    @ConfigProperty(name = "app.review.cooldown-seconds", defaultValue = "60")
+    int cooldownSeconds;
 
     @Inject
     GitHubService gitHubService;
@@ -33,6 +37,11 @@ public class ReviewService {
 
         if (reviewRepository.existsByCommitSha(repoName, pullRequest.getNumber(), commitSha)) {
             Log.infof("Review already exists for commit %s on PR #%d, skipping", commitSha, pullRequest.getNumber());
+            return;
+        }
+
+        if (reviewRepository.wasRecentlyReviewed(repoName, pullRequest.getNumber(), cooldownSeconds)) {
+            Log.infof("Rate limit: PR #%d in %s was reviewed in the last 60 seconds, skipping", pullRequest.getNumber(), repoName);
             return;
         }
 

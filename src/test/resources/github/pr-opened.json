@@ -1,0 +1,63 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "number": 1,
+    "title": "Test PR",
+    "state": "open",
+    "head": {
+      "sha": "abc123",
+      "ref": "feature-branch",
+      "label": "owner:feature-branch",
+      "user": {
+        "login": "user",
+        "id": 1,
+        "type": "User",
+        "site_admin": false
+      }
+    },
+    "base": {
+      "sha": "def456",
+      "ref": "main",
+      "label": "owner:main",
+      "user": {
+        "login": "owner",
+        "id": 2,
+        "type": "User",
+        "site_admin": false
+      }
+    },
+    "diff_url": "https://github.com/owner/repo/pull/1.diff",
+    "user": {
+      "login": "user",
+      "id": 1,
+      "type": "User",
+      "site_admin": false
+    },
+    "body": null,
+    "merged": false,
+    "draft": false
+  },
+  "repository": {
+    "id": 1,
+    "name": "repo",
+    "full_name": "owner/repo",
+    "private": false,
+    "owner": {
+      "login": "owner",
+      "id": 2,
+      "type": "User",
+      "site_admin": false
+    }
+  },
+  "sender": {
+    "login": "user",
+    "id": 1,
+    "type": "User",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 1,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uMQ=="
+  }
+}

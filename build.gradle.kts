@@ -26,6 +26,7 @@ dependencies {
     implementation("io.quarkus:quarkus-hibernate-orm")
     implementation("io.quarkus:quarkus-rest")
     testImplementation("io.quarkus:quarkus-junit5")
+    testImplementation("io.quarkiverse.githubapp:quarkus-github-app-testing:2.14.1")
     testImplementation("io.quarkus:quarkus-junit5-mockito")
     testImplementation("org.mockito:mockito-core")
     testImplementation("io.rest-assured:rest-assured")

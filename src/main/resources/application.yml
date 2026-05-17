@@ -23,3 +23,4 @@ app:
     api-key: ${API_KEY}
   review:
     max-diff-chars: 50000
+    cooldown-seconds: 60

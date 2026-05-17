@@ -135,6 +135,38 @@ public class ReviewRepositoryTest {
         assertEquals("none", reviewRepository.mostReviewedRepo());
     }
 
+    @Test
+    @Transactional
+    void wasRecentlyReviewed_whenReviewedJustNow_returnsTrue() {
+        reviewRepository.persist(buildRecord("repo/a", 1, "sha1", "APPROVED", 8));
+
+        assertTrue(reviewRepository.wasRecentlyReviewed("repo/a", 1, 60));
+    }
+
+    @Test
+    @Transactional
+    void wasRecentlyReviewed_whenNoReviews_returnsFalse() {
+        assertFalse(reviewRepository.wasRecentlyReviewed("repo/a", 1, 60));
+    }
+
+    @Test
+    @Transactional
+    void wasRecentlyReviewed_whenDifferentPr_returnsFalse() {
+        reviewRepository.persist(buildRecord("repo/a", 1, "sha1", "APPROVED", 8));
+
+        assertFalse(reviewRepository.wasRecentlyReviewed("repo/a", 2, 60));
+    }
+
+    @Test
+    @Transactional
+    void wasRecentlyReviewed_whenOldReview_returnsFalse() {
+        ReviewRecord old = buildRecord("repo/a", 1, "sha1", "APPROVED", 8);
+        old.setReviewedAt(java.time.LocalDateTime.now().minusSeconds(120));
+        reviewRepository.persist(old);
+
+        assertFalse(reviewRepository.wasRecentlyReviewed("repo/a", 1, 60));
+    }
+
     private ReviewRecord buildRecord(String repoName, int prNumber, String commitSha,
                                      String severity, int score) {
         return new ReviewRecord(repoName, prNumber, "PR Title", commitSha,

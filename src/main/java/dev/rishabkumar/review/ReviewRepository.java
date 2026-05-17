@@ -10,6 +10,11 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
         return count("repoName = ?1 and prNumber = ?2 and commitSha = ?3", repoName, prNumber, commitSha) > 0;
     }
 
+    public boolean wasRecentlyReviewed(String repoName, int prNumber, int cooldownSeconds) {
+        return count("repoName = ?1 and prNumber = ?2 and reviewedAt > ?3",
+                repoName, prNumber, java.time.LocalDateTime.now().minusSeconds(cooldownSeconds)) > 0;
+    }
+
     public long countApproved() {
         return count("severity", "APPROVED");
     }

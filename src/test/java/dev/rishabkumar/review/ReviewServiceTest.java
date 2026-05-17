@@ -70,6 +70,21 @@ public class ReviewServiceTest {
     }
 
     @Test
+    @Transactional
+    void review_whenRecentlyReviewed_skipsReview() throws IOException {
+        reviewRepository.persist(buildRecord("repo/a", 1, "sha-old"));
+
+        GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha-new");
+        GHRepository repository = mock(GHRepository.class);
+        when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
+
+        reviewService.review(pullRequest, repository);
+
+        verify(gitHubService, never()).fetchDiff(any());
+        verify(geminiReviewService, never()).review(anyString());
+    }
+
+    @Test
     void review_whenGeminiFails_postsFallbackComment() throws IOException {
         GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha123");
         GHRepository repository = mock(GHRepository.class);
