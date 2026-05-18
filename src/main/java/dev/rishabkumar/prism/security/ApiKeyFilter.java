@@ -10,6 +10,8 @@ import jakarta.ws.rs.ext.Provider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 
 @Provider
 @ApplicationScoped
@@ -23,13 +25,15 @@ public class ApiKeyFilter implements ContainerRequestFilter {
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String path = requestContext.getUriInfo().getPath();
 
-        if (!path.startsWith("/reviews")) {
+        if (!path.startsWith("/reviews") && !path.startsWith("/usage") && !path.startsWith("/admin")) {
             return;
         }
 
         String providedKey = requestContext.getHeaderString("API-Key");
 
-        if (providedKey == null || !providedKey.equals(apiKey)) {
+        if (providedKey == null || !MessageDigest.isEqual(
+                providedKey.getBytes(StandardCharsets.UTF_8),
+                apiKey.getBytes(StandardCharsets.UTF_8))) {
             requestContext.abortWith(
                     Response.status(Response.Status.UNAUTHORIZED)
                             .entity("Invalid or missing API key")

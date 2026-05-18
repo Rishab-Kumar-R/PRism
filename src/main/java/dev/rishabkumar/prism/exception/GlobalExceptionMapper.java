@@ -46,6 +46,13 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
                     .build();
         }
 
+        if (e instanceof RateLimitExceededException) {
+            return Response.status(429)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", "Too Many Requests", "message", e.getMessage()))
+                    .build();
+        }
+
         Log.errorf(e, "Unhandled exception: %s", e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

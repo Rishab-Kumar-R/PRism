@@ -100,7 +100,7 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
     }
 
     /**
-     * Projection query — loads only the fields needed for incremental review context,
+     * Projection query - loads only the fields needed for incremental review context,
      * intentionally skipping the large TEXT reviewComment column.
      */
     public Optional<PreviousReviewContext> findLatestContextByPr(String repoName, int prNumber) {
