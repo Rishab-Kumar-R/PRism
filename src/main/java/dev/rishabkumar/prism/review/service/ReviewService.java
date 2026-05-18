@@ -230,6 +230,16 @@ public class ReviewService {
             Log.infof("[%s#%d] Review complete - score: %d, severity: %s, duration: %dms",
                     repoName, prNumber, codeReview.score(), codeReview.severity(), duration);
             reviewMetrics.recordSuccess(repoName, duration);
+        } catch (jakarta.persistence.PersistenceException e) {
+            if (e.getCause() instanceof org.hibernate.exception.ConstraintViolationException) {
+                Log.infof("[%s#%d] Duplicate webhook delivery detected for commit %s - skipping", repoName, prNumber, commitSha);
+                reviewMetrics.recordSkipped("duplicate-webhook");
+            } else {
+                long duration = System.currentTimeMillis() - startMs;
+                Log.errorf(e, "[%s#%d] Review failed after %dms - posting fallback comment", repoName, prNumber, duration);
+                reviewMetrics.recordError(repoName, duration);
+                gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
+            }
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startMs;
             Log.errorf(e, "[%s#%d] Review failed after %dms - posting fallback comment", repoName, prNumber, duration);

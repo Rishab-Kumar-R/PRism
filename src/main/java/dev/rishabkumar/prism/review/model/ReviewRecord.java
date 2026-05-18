@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(indexes = {
         @Index(columnList = "repoName, prNumber"),
-        @Index(columnList = "repoName, prNumber, commitSha"),
+        @Index(columnList = "repoName, prNumber, commitSha", unique = true),
         @Index(columnList = "reviewedAt")
 })
 public class ReviewRecord extends PanacheEntity {
