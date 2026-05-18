@@ -11,6 +11,8 @@ import java.io.IOException;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -28,7 +30,7 @@ public class PullRequestHandlerTest {
                 .when().payloadFromClasspath("/github/pr-opened.json")
                 .event(GHEvent.PULL_REQUEST)
                 .then().github(mocks ->
-                        verify(reviewService, timeout(2000)).review(any(), any())
+                        verify(reviewService, timeout(2000)).review(any(), any(), anyLong(), anyString())
                 );
     }
 
@@ -39,7 +41,7 @@ public class PullRequestHandlerTest {
                 .when().payloadFromClasspath("/github/pr-synchronized.json")
                 .event(GHEvent.PULL_REQUEST)
                 .then().github(mocks ->
-                        verify(reviewService, timeout(2000)).review(any(), any())
+                        verify(reviewService, timeout(2000)).review(any(), any(), anyLong(), anyString())
                 );
     }
 }

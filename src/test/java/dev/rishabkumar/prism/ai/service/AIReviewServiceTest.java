@@ -55,7 +55,7 @@ public class AIReviewServiceTest {
     }
 
     @Test
-    void review_whenValidDiff_returnsCodeReview() {
+    void review_whenValidDiff_returnsReviewResult() {
         CodeReview mockReview = buildMockReview("APPROVED", 8);
         when(codeReviewAI.reviewCode("valid diff")).thenReturn(mockReview);
 

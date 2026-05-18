@@ -6,6 +6,9 @@ import dev.rishabkumar.prism.exception.PrAlreadyPausedException;
 import dev.rishabkumar.prism.exception.PrNotPausedException;
 import dev.rishabkumar.prism.exception.ReviewNotFoundException;
 import dev.rishabkumar.prism.github.service.GitHubService;
+import dev.rishabkumar.prism.ratelimit.model.RateLimitResult;
+import dev.rishabkumar.prism.ratelimit.model.RateLimitStatus;
+import dev.rishabkumar.prism.ratelimit.service.RateLimitService;
 import dev.rishabkumar.prism.review.model.PausedPr;
 import dev.rishabkumar.prism.review.model.PreviousReviewContext;
 import dev.rishabkumar.prism.review.model.ReviewRecord;
@@ -47,6 +50,9 @@ public class ReviewService {
 
     @Inject
     PausedPrRepository pausedPrRepository;
+
+    @Inject
+    RateLimitService rateLimitService;
 
     @Transactional
     public void pause(GHPullRequest pullRequest, GHRepository repository) throws IOException {
@@ -124,17 +130,17 @@ public class ReviewService {
     }
 
     @Transactional
-    public void review(GHPullRequest pullRequest, GHRepository repository) throws IOException {
-        review(pullRequest, repository, false);
+    public void review(GHPullRequest pullRequest, GHRepository repository, long installationId, String accountName) throws IOException {
+        review(pullRequest, repository, installationId, accountName, false);
     }
 
     @Transactional
-    public void reviewManual(GHPullRequest pullRequest, GHRepository repository) throws IOException {
-        review(pullRequest, repository, true);
+    public void reviewManual(GHPullRequest pullRequest, GHRepository repository, long installationId, String accountName) throws IOException {
+        review(pullRequest, repository, installationId, accountName, true);
     }
 
     @Transactional
-    void review(GHPullRequest pullRequest, GHRepository repository, boolean manual) throws IOException {
+    void review(GHPullRequest pullRequest, GHRepository repository, long installationId, String accountName, boolean manual) throws IOException {
         String repoName = gitHubService.getRepoName(repository);
         String commitSha = pullRequest.getHead().getSha();
         int prNumber = pullRequest.getNumber();
@@ -175,6 +181,17 @@ public class ReviewService {
             Log.infof("[%s#%d] Found previous review at %s, fetching incremental diff", repoName, prNumber, baseSha);
         }
 
+        RateLimitResult limitResult = rateLimitService.check(installationId, accountName);
+        if (limitResult.isExceeded()) {
+            Log.warnf("[%s#%d] Review budget exhausted for installation %d (%d/%d monthly, %d/%d daily)",
+                    repoName, prNumber, installationId,
+                    limitResult.reviewsUsed(), limitResult.reviewBudget(),
+                    limitResult.dailyReviewsUsed(), limitResult.dailyReviewBudget());
+            gitHubService.postReviewComment(pullRequest, buildRateLimitExceededComment(limitResult));
+            reviewMetrics.recordSkipped("rate-limit-exceeded");
+            return;
+        }
+
         long startMs = System.currentTimeMillis();
 
         try {
@@ -190,7 +207,10 @@ public class ReviewService {
                 return;
             }
 
-            gitHubService.postReviewComment(pullRequest, codeReview.fullReview());
+            rateLimitService.record(installationId);
+
+            String reviewComment = buildReviewComment(codeReview.fullReview(), limitResult);
+            gitHubService.postReviewComment(pullRequest, reviewComment);
 
             boolean wasLargePr = diff.contains("[Diff truncated");
             gitHubService.applyLabel(pullRequest, codeReview.severity(), wasLargePr);
@@ -215,5 +235,39 @@ public class ReviewService {
             reviewMetrics.recordError(repoName, duration);
             gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
         }
+    }
+
+    private String buildReviewComment(String fullReview, RateLimitResult limit) {
+        if (limit.status() != RateLimitStatus.WARNING) {
+            return fullReview;
+        }
+        return fullReview + """
+
+
+                ---
+                > **Usage warning:** This repository has used %d%% of its monthly review budget (%s tier: %d reviews/month). \
+                Reviews will be blocked when the budget is exhausted."""
+                .formatted(limit.percentUsed(), limit.tier(), limit.reviewBudget());
+    }
+
+    private String buildRateLimitExceededComment(RateLimitResult limit) {
+        if (limit.isDailyExceeded()) {
+            return """
+                    ## PRism - Daily Limit Reached
+
+                    This repository has used all %d reviews allowed today (%s plan).
+                    Reviews will resume automatically tomorrow.
+
+                    To increase your daily limit, upgrade your PRism plan.
+                    """.formatted(limit.dailyReviewBudget(), limit.tier());
+        }
+        return """
+                ## PRism - Monthly Budget Exhausted
+
+                This repository has used all %d reviews included in the %s plan this month.
+                Automatic reviews are paused until the 1st of next month.
+
+                To increase your limit, upgrade your PRism plan.
+                """.formatted(limit.reviewBudget(), limit.tier());
     }
 }

@@ -18,10 +18,12 @@ public class PullRequestHandler {
     void onPullRequestOpened(@PullRequest.Opened GHEventPayload.PullRequest payload) {
         var pullRequest = payload.getPullRequest();
         var repository = payload.getRepository();
+        long installationId = extractInstallationId(payload);
+        String accountName = extractAccountName(payload);
 
         executor.submit(() -> {
             try {
-                reviewService.review(pullRequest, repository);
+                reviewService.review(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
                 Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
             }
@@ -31,13 +33,25 @@ public class PullRequestHandler {
     void onPullRequestSynchronized(@PullRequest.Synchronize GHEventPayload.PullRequest payload) {
         var pullRequest = payload.getPullRequest();
         var repository = payload.getRepository();
+        long installationId = extractInstallationId(payload);
+        String accountName = extractAccountName(payload);
 
         executor.submit(() -> {
             try {
-                reviewService.review(pullRequest, repository);
+                reviewService.review(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
                 Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
             }
         });
+    }
+
+    private long extractInstallationId(GHEventPayload.PullRequest payload) {
+        return payload.getInstallation() != null ? payload.getInstallation().getId() : 0L;
+    }
+
+    private String extractAccountName(GHEventPayload.PullRequest payload) {
+        if (payload.getInstallation() == null) return "unknown";
+        if (payload.getInstallation().getAccount() == null) return "unknown";
+        return payload.getInstallation().getAccount().getLogin();
     }
 }

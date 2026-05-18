@@ -3,9 +3,12 @@ package dev.rishabkumar.prism.review.service;
 import dev.rishabkumar.prism.ai.model.CodeReview;
 import dev.rishabkumar.prism.ai.service.AIReviewService;
 import dev.rishabkumar.prism.github.service.GitHubService;
+import dev.rishabkumar.prism.ratelimit.model.RateLimitResult;
+import dev.rishabkumar.prism.ratelimit.model.RateLimitStatus;
+import dev.rishabkumar.prism.ratelimit.model.Tier;
+import dev.rishabkumar.prism.ratelimit.service.RateLimitService;
 import dev.rishabkumar.prism.review.model.ReviewRecord;
 import dev.rishabkumar.prism.review.repository.ReviewRepository;
-import dev.rishabkumar.prism.review.service.ReviewService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -19,6 +22,9 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
@@ -35,13 +41,21 @@ public class ReviewServiceTest {
     @InjectMock
     AIReviewService aiReviewService;
 
+    @InjectMock
+    RateLimitService rateLimitService;
+
     @Inject
     ReviewRepository reviewRepository;
+
+    private static final long INSTALLATION_ID = 123L;
+    private static final String ACCOUNT_NAME = "test-org";
 
     @BeforeEach
     @Transactional
     void cleanup() {
         reviewRepository.deleteAll();
+        when(rateLimitService.check(anyLong(), anyString())).thenReturn(okLimit());
+        doNothing().when(rateLimitService).record(anyLong());
     }
 
     @Test
@@ -54,7 +68,7 @@ public class ReviewServiceTest {
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(codeReview);
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService).postReviewComment(pullRequest, "## Full review");
     }
@@ -68,7 +82,7 @@ public class ReviewServiceTest {
         GHRepository repository = mock(GHRepository.class);
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService, never()).fetchDiff(any());
         verify(aiReviewService, never()).review(anyString(), any());
@@ -83,21 +97,21 @@ public class ReviewServiceTest {
         GHRepository repository = mock(GHRepository.class);
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService, never()).fetchDiff(any());
         verify(aiReviewService, never()).review(anyString(), any());
     }
 
     @Test
-    void review_whenGeminiFails_postsFallbackComment() throws IOException {
+    void review_whenAIFails_postsFallbackComment() throws IOException {
         GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha123");
         GHRepository repository = mock(GHRepository.class);
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any())).thenThrow(new RuntimeException("Gemini down"));
+        when(gitHubService.fetchDiff(any())).thenThrow(new RuntimeException("AI down"));
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService).postReviewComment(pullRequest,
                 "AI review is temporarily unavailable. Please try again later.");
@@ -114,7 +128,7 @@ public class ReviewServiceTest {
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         List<ReviewRecord> records = reviewRepository.listAll();
         assertEquals(1, records.size());
@@ -135,7 +149,7 @@ public class ReviewServiceTest {
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService).applyLabel(pullRequest, "APPROVED", false);
     }
@@ -151,9 +165,38 @@ public class ReviewServiceTest {
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn(truncatedDiff);
         when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
 
-        reviewService.review(pullRequest, repository);
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService).applyLabel(pullRequest, "APPROVED", true);
+    }
+
+    @Test
+    void review_whenRateLimitExceeded_postsLimitComment() throws IOException {
+        GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha123");
+        GHRepository repository = mock(GHRepository.class);
+
+        when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
+        when(rateLimitService.check(INSTALLATION_ID, ACCOUNT_NAME)).thenReturn(exceededLimit());
+
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
+
+        verify(aiReviewService, never()).review(anyString(), any());
+        verify(gitHubService).postReviewComment(eq(pullRequest), anyString());
+    }
+
+    @Test
+    void review_whenSucceeds_recordsOneReview() throws IOException {
+        GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha123");
+        GHRepository repository = mock(GHRepository.class);
+        CodeReview codeReview = buildCodeReview("APPROVED", 8);
+
+        when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
+
+        reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
+
+        verify(rateLimitService).record(INSTALLATION_ID);
     }
 
     private GHPullRequest buildPullRequest(int prNumber, String title, String sha) throws IOException {
@@ -172,5 +215,13 @@ public class ReviewServiceTest {
     private ReviewRecord buildRecord(String repoName, int prNumber, String commitSha) {
         return new ReviewRecord(repoName, prNumber, "PR Title", commitSha,
                 "APPROVED", 8, 0, 0, 0, 0, "Fix something", "## Review");
+    }
+
+    private RateLimitResult okLimit() {
+        return new RateLimitResult(RateLimitStatus.OK, 5, 50, 1, 5, Tier.FREE);
+    }
+
+    private RateLimitResult exceededLimit() {
+        return new RateLimitResult(RateLimitStatus.EXCEEDED, 50, 50, 5, 5, Tier.FREE);
     }
 }

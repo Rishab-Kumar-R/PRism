@@ -49,11 +49,14 @@ public class IssueCommentHandler {
         GHPullRequest pullRequest = payload.getRepository().getPullRequest(payload.getIssue().getNumber());
         GHRepository repository = payload.getRepository();
         int prNumber = pullRequest.getNumber();
+        long installationId = payload.getInstallation() != null ? payload.getInstallation().getId() : 0L;
+        String accountName = payload.getInstallation() != null && payload.getInstallation().getAccount() != null
+                ? payload.getInstallation().getAccount().getLogin() : "unknown";
 
         switch (command) {
             case "/review" -> executor.submit(() -> {
                 try {
-                    reviewService.reviewManual(pullRequest, repository);
+                    reviewService.reviewManual(pullRequest, repository, installationId, accountName);
                 } catch (Exception e) {
                     Log.errorf(e, "[PR #%d] Async /review failed", prNumber);
                 }
@@ -88,7 +91,7 @@ public class IssueCommentHandler {
             });
             case "/summary" -> executor.submit(() -> {
                 try {
-                    summaryService.summarize(pullRequest, repository);
+                    summaryService.summarize(pullRequest, repository, installationId, accountName);
                 } catch (Exception e) {
                     Log.errorf(e, "[PR #%d] Async /summary failed", prNumber);
                 }

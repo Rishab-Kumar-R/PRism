@@ -27,15 +27,15 @@ public class AIReviewService {
         if (previousContext != null && !previousContext.isBlank()) {
             Log.info("Sending diff to AI with previous review context");
             prompt = """
-                Previous review findings:
-                %s
+                    Previous review findings:
+                    %s
 
-                Current diff to review:
-                %s
+                    Current diff to review:
+                    %s
 
-                Where relevant, acknowledge issues from the previous review that have been fixed.
-                Re-flag any that still persist.
-                """.formatted(previousContext, diff);
+                    Where relevant, acknowledge issues from the previous review that have been fixed.
+                    Re-flag any that still persist.
+                    """.formatted(previousContext, diff);
         } else {
             Log.info("Sending diff to AI for first review");
             prompt = diff;
@@ -48,7 +48,7 @@ public class AIReviewService {
             throw new AIReviewException("AI returned null review for provided diff");
         }
 
-        Log.infof("AI review completed with score %d and severity %s", result.score(), result.severity());
+        Log.infof("AI review completed: score=%d severity=%s", result.score(), result.severity());
         return result;
     }
 }

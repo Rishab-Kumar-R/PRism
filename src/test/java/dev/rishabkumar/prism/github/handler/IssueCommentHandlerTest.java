@@ -14,6 +14,8 @@ import java.io.IOException;
 
 import static io.quarkiverse.githubapp.testing.GitHubAppTesting.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @QuarkusTest
@@ -38,7 +40,7 @@ public class IssueCommentHandlerTest {
                 .when().payloadFromClasspath("/github/review-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks ->
-                        verify(reviewService, timeout(2000)).reviewManual(any(), any())
+                        verify(reviewService, timeout(2000)).reviewManual(any(), any(), anyLong(), anyString())
                 );
     }
 
@@ -49,8 +51,8 @@ public class IssueCommentHandlerTest {
                 .when().payloadFromClasspath("/github/non-review-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks -> {
-                        verify(reviewService, never()).review(any(), any());
-                        verify(reviewService, never()).reviewManual(any(), any());
+                        verify(reviewService, never()).review(any(), any(), anyLong(), anyString());
+                        verify(reviewService, never()).reviewManual(any(), any(), anyLong(), anyString());
                 });
     }
 
@@ -61,8 +63,8 @@ public class IssueCommentHandlerTest {
                 .when().payloadFromClasspath("/github/issue-comment.json")
                 .event(GHEvent.ISSUE_COMMENT)
                 .then().github(mocks -> {
-                        verify(reviewService, never()).review(any(), any());
-                        verify(reviewService, never()).reviewManual(any(), any());
+                        verify(reviewService, never()).review(any(), any(), anyLong(), anyString());
+                        verify(reviewService, never()).reviewManual(any(), any(), anyLong(), anyString());
                 });
     }
 }
