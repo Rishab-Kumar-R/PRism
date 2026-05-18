@@ -3,7 +3,6 @@ package dev.rishabkumar.prism.github.service;
 import dev.rishabkumar.prism.exception.DiffFetchException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
@@ -16,9 +15,6 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class GitHubService {
-
-    @ConfigProperty(name = "app.review.max-diff-chars", defaultValue = "50000")
-    int maxDiffChars;
 
     public String fetchDiff(GHPullRequest pullRequest) {
         return fetchDiff(pullRequest, null);
@@ -59,12 +55,6 @@ public class GitHubService {
         }
 
         Log.infof("Fetched diff of %d chars for PR #%d", diff.length(), pullRequest.getNumber());
-
-        if (diff.length() > maxDiffChars) {
-            Log.warnf("Diff exceeds limit (%d chars), truncating to %d", diff.length(), maxDiffChars);
-            return diff.substring(0, maxDiffChars) + "\n\n[Diff truncated - too large for review]";
-        }
-
         return diff;
     }
 

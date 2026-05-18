@@ -1,6 +1,7 @@
 package dev.rishabkumar.prism.review.service;
 
 import dev.rishabkumar.prism.ai.model.CodeReview;
+import dev.rishabkumar.prism.ai.model.ReviewOutcome;
 import dev.rishabkumar.prism.ai.service.AIReviewService;
 import dev.rishabkumar.prism.github.service.GitHubService;
 import dev.rishabkumar.prism.ratelimit.model.RateLimitResult;
@@ -66,7 +67,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(codeReview);
+        when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -126,7 +127,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -147,7 +148,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -155,15 +156,14 @@ public class ReviewServiceTest {
     }
 
     @Test
-    void review_whenDiffTruncated_appliesLargePrLabel() throws IOException {
+    void review_whenChunked_appliesLargePrLabel() throws IOException {
         GHPullRequest pullRequest = buildPullRequest(1, "Test PR", "sha123");
         GHRepository repository = mock(GHRepository.class);
         CodeReview codeReview = buildCodeReview("APPROVED", 9);
-        String truncatedDiff = "x".repeat(100) + "[Diff truncated";
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any(), isNull())).thenReturn(truncatedDiff);
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
+        when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.chunked(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -192,7 +192,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(codeReview);
+        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 

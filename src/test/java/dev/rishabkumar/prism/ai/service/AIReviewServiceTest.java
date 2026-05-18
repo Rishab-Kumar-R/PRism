@@ -2,6 +2,7 @@ package dev.rishabkumar.prism.ai.service;
 
 import dev.rishabkumar.prism.ai.client.CodeReviewAI;
 import dev.rishabkumar.prism.ai.model.CodeReview;
+import dev.rishabkumar.prism.ai.model.ReviewOutcome;
 import dev.rishabkumar.prism.exception.AIReviewException;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -25,7 +26,7 @@ public class AIReviewServiceTest {
 
     @Test
     void review_whenDiffIsNull_returnsNullWithoutCallingAI() {
-        CodeReview result = aiReviewService.review(null);
+        ReviewOutcome result = aiReviewService.review(null);
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -33,7 +34,7 @@ public class AIReviewServiceTest {
 
     @Test
     void review_whenDiffIsBlank_returnsNullWithoutCallingAI() {
-        CodeReview result = aiReviewService.review("   ");
+        ReviewOutcome result = aiReviewService.review("   ");
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -41,7 +42,7 @@ public class AIReviewServiceTest {
 
     @Test
     void review_whenDiffIsEmpty_returnsNullWithoutCallingAI() {
-        CodeReview result = aiReviewService.review("");
+        ReviewOutcome result = aiReviewService.review("");
 
         assertNull(result);
         verifyNoInteractions(codeReviewAI);
@@ -59,11 +60,12 @@ public class AIReviewServiceTest {
         CodeReview mockReview = buildMockReview("APPROVED", 8);
         when(codeReviewAI.reviewCode("valid diff")).thenReturn(mockReview);
 
-        CodeReview result = aiReviewService.review("valid diff");
+        ReviewOutcome outcome = aiReviewService.review("valid diff");
 
-        assertNotNull(result);
-        assertEquals("APPROVED", result.severity());
-        assertEquals(8, result.score());
+        assertNotNull(outcome);
+        assertEquals("APPROVED", outcome.review().severity());
+        assertEquals(8, outcome.review().score());
+        assertFalse(outcome.chunked());
     }
 
     @Test
@@ -80,7 +82,8 @@ public class AIReviewServiceTest {
         CodeReview mockReview = buildMockReview("NEEDS_WORK", 5);
         when(codeReviewAI.reviewCode(anyString())).thenReturn(mockReview);
 
-        CodeReview result = aiReviewService.review("diff");
+        ReviewOutcome outcome = aiReviewService.review("diff");
+        CodeReview result = outcome.review();
 
         assertNotNull(result);
         assertEquals("NEEDS_WORK", result.severity());
@@ -90,6 +93,54 @@ public class AIReviewServiceTest {
         assertEquals(1, result.securityCount());
         assertEquals("Fix the null pointer", result.recommendation());
         assertEquals("## Review\nLooks risky.", result.fullReview());
+    }
+
+    @Test
+    void review_whenDiffExceedsLimit_reviewsInChunksAndMerges() {
+        // Two file diffs that together exceed the 50K char default limit
+        String fileA = "diff --git a/A.java b/A.java\n" + "x".repeat(30_000);
+        String fileB = "diff --git a/B.java b/B.java\n" + "y".repeat(30_000);
+        String largeDiff = fileA + fileB;
+
+        CodeReview chunkReview = buildMockReview("APPROVED", 8);
+        when(codeReviewAI.reviewCode(anyString())).thenReturn(chunkReview);
+
+        ReviewOutcome outcome = aiReviewService.review(largeDiff);
+
+        assertTrue(outcome.chunked());
+        verify(codeReviewAI, times(2)).reviewCode(anyString());
+    }
+
+    @Test
+    void review_whenChunked_takesMinScore() {
+        String fileA = "diff --git a/A.java b/A.java\n" + "x".repeat(30_000);
+        String fileB = "diff --git a/B.java b/B.java\n" + "y".repeat(30_000);
+        String largeDiff = fileA + fileB;
+
+        when(codeReviewAI.reviewCode(anyString()))
+                .thenReturn(buildMockReview("APPROVED", 9))
+                .thenReturn(buildMockReview("NEEDS_WORK", 3));
+
+        ReviewOutcome outcome = aiReviewService.review(largeDiff);
+
+        assertEquals(3, outcome.review().score());
+        assertEquals("NEEDS_WORK", outcome.review().severity());
+    }
+
+    @Test
+    void review_whenChunked_sumsCounts() {
+        String fileA = "diff --git a/A.java b/A.java\n" + "x".repeat(30_000);
+        String fileB = "diff --git a/B.java b/B.java\n" + "y".repeat(30_000);
+        String largeDiff = fileA + fileB;
+
+        when(codeReviewAI.reviewCode(anyString()))
+                .thenReturn(buildMockReview("APPROVED", 8))  // bugCount=2, securityCount=1
+                .thenReturn(buildMockReview("APPROVED", 7)); // bugCount=2, securityCount=1
+
+        ReviewOutcome outcome = aiReviewService.review(largeDiff);
+
+        assertEquals(4, outcome.review().bugCount());
+        assertEquals(2, outcome.review().securityCount());
     }
 
     private CodeReview buildMockReview(String severity, int score) {

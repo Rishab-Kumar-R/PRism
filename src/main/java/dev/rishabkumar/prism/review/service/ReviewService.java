@@ -1,6 +1,7 @@
 package dev.rishabkumar.prism.review.service;
 
 import dev.rishabkumar.prism.ai.model.CodeReview;
+import dev.rishabkumar.prism.ai.model.ReviewOutcome;
 import dev.rishabkumar.prism.ai.service.AIReviewService;
 import dev.rishabkumar.prism.exception.PrAlreadyPausedException;
 import dev.rishabkumar.prism.exception.PrNotPausedException;
@@ -198,22 +199,22 @@ public class ReviewService {
             String diff = gitHubService.fetchDiff(pullRequest, baseSha);
 
             Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, diff.length());
-            CodeReview codeReview = aiReviewService.review(diff, previousContext);
+            ReviewOutcome outcome = aiReviewService.review(diff, previousContext);
 
-            if (codeReview == null) {
+            if (outcome == null) {
                 Log.warnf("[%s#%d] AI returned null review - posting fallback comment", repoName, prNumber);
                 gitHubService.postReviewComment(pullRequest, "No diff available to review.");
                 reviewMetrics.recordError(repoName, System.currentTimeMillis() - startMs);
                 return;
             }
 
+            CodeReview codeReview = outcome.review();
             rateLimitService.record(installationId);
 
             String reviewComment = buildReviewComment(codeReview.fullReview(), limitResult);
             gitHubService.postReviewComment(pullRequest, reviewComment);
 
-            boolean wasLargePr = diff.contains("[Diff truncated");
-            gitHubService.applyLabel(pullRequest, codeReview.severity(), wasLargePr);
+            gitHubService.applyLabel(pullRequest, codeReview.severity(), outcome.chunked());
 
             ReviewRecord record = new ReviewRecord(
                     repoName, prNumber, pullRequest.getTitle(), commitSha,
