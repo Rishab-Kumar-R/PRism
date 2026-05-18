@@ -7,23 +7,17 @@
 
 A GitHub App that automatically reviews pull requests using AI. Detects bugs, security issues, and code quality problems - then posts a structured review comment directly on the PR.
 
-[//]: # (## Demo)
-
-[//]: # ()
-[//]: # (> Bot commenting on a real PR after opening it:)
-
-[//]: # ()
-[//]: # (![Demo]&#40;docs/demo.gif&#41;)
-
-[//]: # ()
-[//]: # (> PR labels applied automatically based on review severity:)
-
-[//]: # ()
-[//]: # (- `ai: approved` — score ≥ 7, no critical issues)
-
-[//]: # (- `ai: needs-work` — bugs, security issues, or significant problems found)
-
-[//]: # (- `ai: large-pr` — diff too large, partially reviewed)
+[//]: # "## Demo"
+[//]: #
+[//]: # "> Bot commenting on a real PR after opening it:"
+[//]: #
+[//]: # "![Demo](docs/demo.gif)"
+[//]: #
+[//]: # "> PR labels applied automatically based on review severity:"
+[//]: #
+[//]: # "- `ai: approved` - score ≥ 7, no critical issues"
+[//]: # "- `ai: needs-work` - bugs, security issues, or significant problems found"
+[//]: # "- `ai: large-pr` - diff too large, partially reviewed"
 
 ## Features
 
@@ -57,7 +51,7 @@ Save review record to database
 ## Tech Stack
 
 | Layer              | Technology                                                                                             |
-|--------------------|--------------------------------------------------------------------------------------------------------|
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
 | Framework          | [Quarkus 3.35](https://quarkus.io/)                                                                    |
 | GitHub Integration | [Quarkus GitHub App](https://quarkiverse.github.io/quarkiverse-docs/quarkus-github-app/dev/index.html) |
 | AI                 | [LangChain4j + OpenRouter](https://docs.quarkiverse.io/quarkus-langchain4j/dev/index.html)             |
@@ -92,12 +86,12 @@ src/main/java/dev/rishabkumar/prism/
 All endpoints require the `API-Key` header.
 
 | Method | Endpoint                   | Description                                                       |
-|--------|----------------------------|-------------------------------------------------------------------|
+| ------ | -------------------------- | ----------------------------------------------------------------- |
 | GET    | `/reviews`                 | All reviews (paginated)                                           |
 | GET    | `/reviews/{id}`            | Single review with full breakdown                                 |
 | GET    | `/reviews/repo/{repoName}` | Reviews for a specific repo                                       |
 | GET    | `/reviews/pr/{prNumber}`   | Reviews for a specific PR                                         |
-| GET    | `/reviews/stats`           | Aggregate stats — approval rate, average score, most common issue |
+| GET    | `/reviews/stats`           | Aggregate stats - approval rate, average score, most common issue |
 
 ### Pagination
 
@@ -129,17 +123,20 @@ All list endpoints support `?page=0&size=20` query params.
 ## Setup
 
 **1. Clone the repo**
+
 ```bash
 git clone https://github.com/Rishab-Kumar-R/PRism.git
 cd PRism
 ```
 
 **2. Create your `.env` file**
+
 ```bash
 cp .env.example .env
 ```
 
 Fill in your values:
+
 ```properties
 OPENROUTER_API_KEY=your_openrouter_api_key
 AI_MODEL_ID=openai/gpt-oss-120b:free
@@ -149,6 +146,7 @@ API_KEY=your_strong_secret_key
 ```
 
 **3. Run locally**
+
 ```bash
 ./gradlew quarkusDev
 ```
@@ -159,7 +157,7 @@ API_KEY=your_strong_secret_key
 ./gradlew test
 ```
 
-58 tests covering all layers — REST endpoints, repository queries, AI service, GitHub service, and the full review flow.
+58 tests covering all layers - REST endpoints, repository queries, AI service, GitHub service, and the full review flow.
 
 ## Building
 
@@ -170,7 +168,7 @@ API_KEY=your_strong_secret_key
 ## GitHub App Permissions Required
 
 | Permission    | Access       |
-|---------------|--------------|
+| ------------- | ------------ |
 | Pull requests | Read & Write |
 | Issues        | Read & Write |
 | Contents      | Read         |
@@ -180,7 +178,7 @@ API_KEY=your_strong_secret_key
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feat/my-feature`)
 3. Commit your changes
-4. Push and open a PR — the bot will review it automatically
+4. Push and open a PR - the bot will review it automatically
 
 ## License
 

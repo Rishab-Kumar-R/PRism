@@ -20,6 +20,11 @@ quarkus:
     schema-management:
       strategy: update
 
+  smallrye-openapi:
+    info-title: PRism API
+    info-version: 1.0.0
+    info-description: AI-powered GitHub PR review API
+
 app:
   security:
     api-key: ${API_KEY}
