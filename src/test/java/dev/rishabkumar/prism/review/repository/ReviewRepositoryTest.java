@@ -196,7 +196,7 @@ public class ReviewRepositoryTest {
     void findLatestContextByPr_whenExists_returnsContext() {
         reviewRepository.persist(buildRecord("repo/a", 1, "sha1", "APPROVED", 8));
 
-        Optional<PreviousReviewContext> result = reviewRepository.findLatestContextByPr("repo/a", 1);
+        Optional<PreviousReviewContext> result = reviewRepository.findLatestContextByPr("repo/a", 1, java.time.LocalDateTime.MIN);
 
         assertTrue(result.isPresent());
         assertEquals("sha1", result.get().commitSha());
@@ -207,7 +207,7 @@ public class ReviewRepositoryTest {
     @Test
     @Transactional
     void findLatestContextByPr_whenNotExists_returnsEmpty() {
-        Optional<PreviousReviewContext> result = reviewRepository.findLatestContextByPr("repo/x", 999);
+        Optional<PreviousReviewContext> result = reviewRepository.findLatestContextByPr("repo/x", 999, java.time.LocalDateTime.MIN);
 
         assertFalse(result.isPresent());
     }
