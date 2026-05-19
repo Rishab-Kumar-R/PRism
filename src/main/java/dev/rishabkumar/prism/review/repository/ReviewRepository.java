@@ -103,7 +103,8 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
      * Projection query - loads only the fields needed for incremental review context,
      * intentionally skipping the large TEXT reviewComment column.
      */
-    public Optional<PreviousReviewContext> findLatestContextByPr(String repoName, int prNumber) {
+    public Optional<PreviousReviewContext> findLatestContextByPr(String repoName, int prNumber,
+                                                                  java.time.LocalDateTime notBefore) {
         try {
             Object[] row = (Object[]) getEntityManager()
                     .createQuery(
@@ -111,9 +112,11 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
                             "r.securityCount, r.performanceCount, r.recommendation " +
                             "FROM ReviewRecord r " +
                             "WHERE r.repoName = :repoName AND r.prNumber = :prNumber " +
+                            "AND r.reviewedAt > :notBefore " +
                             "ORDER BY r.reviewedAt DESC")
                     .setParameter("repoName", repoName)
                     .setParameter("prNumber", prNumber)
+                    .setParameter("notBefore", notBefore)
                     .setMaxResults(1)
                     .getSingleResult();
             return Optional.of(new PreviousReviewContext(

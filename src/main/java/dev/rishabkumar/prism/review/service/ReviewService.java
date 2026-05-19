@@ -12,10 +12,12 @@ import dev.rishabkumar.prism.ratelimit.model.RateLimitStatus;
 import dev.rishabkumar.prism.ratelimit.service.RateLimitService;
 import dev.rishabkumar.prism.review.model.PausedPr;
 import dev.rishabkumar.prism.review.model.PreviousReviewContext;
+import dev.rishabkumar.prism.review.model.PrResetRecord;
 import dev.rishabkumar.prism.review.model.ReviewRecord;
 import dev.rishabkumar.prism.review.model.ReviewStats;
 import dev.rishabkumar.prism.review.model.ReviewSummary;
 import dev.rishabkumar.prism.review.repository.PausedPrRepository;
+import dev.rishabkumar.prism.review.repository.PrResetRepository;
 import dev.rishabkumar.prism.review.repository.ReviewRepository;
 import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheResult;
@@ -28,6 +30,7 @@ import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GHRepository;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,6 +56,9 @@ public class ReviewService {
     PausedPrRepository pausedPrRepository;
 
     @Inject
+    PrResetRepository prResetRepository;
+
+    @Inject
     RateLimitService rateLimitService;
 
     @Transactional
@@ -69,6 +75,16 @@ public class ReviewService {
         Log.infof("[%s#%d] Auto-review paused", repoName, prNumber);
         gitHubService.postReviewComment(pullRequest,
                 "Auto-review paused for this PR. PRism will no longer review new commits automatically.\n\nUse `/review resume` to re-enable, or `/review` to trigger a manual review.");
+    }
+
+    @Transactional
+    public void reset(GHPullRequest pullRequest, GHRepository repository) throws IOException {
+        String repoName = gitHubService.getRepoName(repository);
+        int prNumber = pullRequest.getNumber();
+        prResetRepository.persist(new PrResetRecord(repoName, prNumber));
+        Log.infof("[%s#%d] Review history reset - next review will be a full diff", repoName, prNumber);
+        gitHubService.postReviewComment(pullRequest,
+                "Review history cleared. The next review will be a full diff from scratch.");
     }
 
     @Transactional
@@ -166,7 +182,9 @@ public class ReviewService {
             return;
         }
 
-        Optional<PreviousReviewContext> previousReview = reviewRepository.findLatestContextByPr(repoName, prNumber);
+        LocalDateTime notBefore = prResetRepository.findLatestReset(repoName, prNumber)
+                .orElse(LocalDateTime.MIN);
+        Optional<PreviousReviewContext> previousReview = reviewRepository.findLatestContextByPr(repoName, prNumber, notBefore);
         String baseSha = previousReview.map(PreviousReviewContext::commitSha).orElse(null);
         String previousContext = previousReview.map(r -> """
                 Score: %d/10, Severity: %s

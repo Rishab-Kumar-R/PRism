@@ -38,7 +38,8 @@ public class IssueCommentHandler {
         String command = body.trim().toLowerCase();
 
         if (!command.equals("/review") && !command.equals("/review pause")
-                && !command.equals("/review resume") && !command.equals("/summary")) {
+                && !command.equals("/review resume") && !command.equals("/review reset")
+                && !command.equals("/summary")) {
             return;
         }
 
@@ -87,6 +88,13 @@ public class IssueCommentHandler {
                     }
                 } catch (Exception e) {
                     Log.errorf(e, "[PR #%d] Async /review resume failed", prNumber);
+                }
+            });
+            case "/review reset" -> executor.submit(() -> {
+                try {
+                    reviewService.reset(pullRequest, repository);
+                } catch (Exception e) {
+                    Log.errorf(e, "[PR #%d] Async /review reset failed", prNumber);
                 }
             });
             case "/summary" -> executor.submit(() -> {
