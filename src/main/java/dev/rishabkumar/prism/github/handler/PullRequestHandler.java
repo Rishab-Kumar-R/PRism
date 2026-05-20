@@ -1,5 +1,6 @@
 package dev.rishabkumar.prism.github.handler;
 
+import dev.rishabkumar.prism.ai.service.WalkthroughService;
 import dev.rishabkumar.prism.review.service.ReviewService;
 import io.quarkiverse.githubapp.event.PullRequest;
 import io.quarkus.logging.Log;
@@ -13,6 +14,9 @@ public class PullRequestHandler {
     ReviewService reviewService;
 
     @Inject
+    WalkthroughService walkthroughService;
+
+    @Inject
     ManagedExecutor executor;
 
     void onPullRequestOpened(@PullRequest.Opened GHEventPayload.PullRequest payload) {
@@ -20,6 +24,14 @@ public class PullRequestHandler {
         var repository = payload.getRepository();
         long installationId = extractInstallationId(payload);
         String accountName = extractAccountName(payload);
+
+        executor.submit(() -> {
+            try {
+                walkthroughService.walkthrough(pullRequest, repository, installationId, accountName);
+            } catch (Exception e) {
+                Log.errorf(e, "Async walkthrough failed for PR #%d", pullRequest.getNumber());
+            }
+        });
 
         executor.submit(() -> {
             try {
