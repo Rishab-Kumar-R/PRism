@@ -281,6 +281,9 @@ public class ReviewService {
             }
 
             gitHubService.applyLabel(pullRequest, codeReview.severity(), outcome.chunked());
+            gitHubService.postCommitStatus(repository, commitSha,
+                    "APPROVED".equals(codeReview.severity()),
+                    codeReview.score(), codeReview.recommendation());
 
             reviewRepository.persist(record);
             invalidateStatsCache();

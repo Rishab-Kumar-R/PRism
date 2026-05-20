@@ -142,6 +142,21 @@ public class GitHubService {
         return builder.create();
     }
 
+    public void postCommitStatus(GHRepository repository, String commitSha,
+                                  boolean approved, int score, String recommendation) {
+        GHCommitState state = approved ? GHCommitState.SUCCESS : GHCommitState.FAILURE;
+        String description = "Score: %d/10 — %s".formatted(score,
+                recommendation != null && recommendation.length() > 100
+                        ? recommendation.substring(0, 97) + "..."
+                        : recommendation);
+        try {
+            repository.createCommitStatus(commitSha, state, null, description, "PRism / code-review");
+            Log.infof("Posted commit status %s for %s", state, commitSha.substring(0, 7));
+        } catch (IOException e) {
+            Log.warnf("Could not post commit status for %s: %s", commitSha.substring(0, 7), e.getMessage());
+        }
+    }
+
     public void dismissPreviousReview(GHPullRequest pullRequest, long reviewId) {
         try {
             pullRequest.listReviews().toList().stream()
