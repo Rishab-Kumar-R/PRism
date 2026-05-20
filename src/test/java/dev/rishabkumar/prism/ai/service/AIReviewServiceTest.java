@@ -154,7 +154,8 @@ public class AIReviewServiceTest {
                 3,
                 List.of("Issue 1", "Issue 2"),
                 "Fix the null pointer",
-                "## Review\nLooks risky."
+                "## Review\nLooks risky.",
+                List.of()
         );
     }
 }

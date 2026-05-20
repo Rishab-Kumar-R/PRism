@@ -209,7 +209,7 @@ public class ReviewServiceTest {
 
     private CodeReview buildCodeReview(String severity, int score) {
         return new CodeReview("Summary", score, severity, 1, 0, 0, 2,
-                List.of("Issue 1"), "Fix it", "## Full review");
+                List.of("Issue 1"), "Fix it", "## Full review", List.of());
     }
 
     private ReviewRecord buildRecord(String repoName, int prNumber, String commitSha) {
