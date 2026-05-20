@@ -43,6 +43,11 @@ import io.quarkiverse.langchain4j.RegisterAiService;
         <rules>
             Return valid JSON only. No explanation outside the JSON.
             fullReview must be thorough, constructive, and specific with examples where possible.
+            Test gap detection: identify source files that were modified but have no corresponding
+            test file changes in the diff. Use language-appropriate conventions to recognise test
+            files (e.g. *_test.go, *Spec.js, *_spec.rb, test_*.py, *Test.java, *.test.ts, etc.).
+            If any gaps are found, include a "Test gaps" section at the end of fullReview listing
+            the affected files. If no gaps exist, omit the section entirely.
         </rules>
         """)
 public interface CodeReviewAI {
