@@ -31,6 +31,10 @@ public class ReviewRecord extends PanacheEntity {
     @Column(columnDefinition = "TEXT")
     private String reviewComment;
 
+    private Long githubReviewId;
+
+    private Long issueCommentId;
+
     private LocalDateTime reviewedAt;
 
     public ReviewRecord() {
@@ -149,6 +153,22 @@ public class ReviewRecord extends PanacheEntity {
 
     public void setReviewComment(String reviewComment) {
         this.reviewComment = reviewComment;
+    }
+
+    public Long getGithubReviewId() {
+        return githubReviewId;
+    }
+
+    public void setGithubReviewId(Long githubReviewId) {
+        this.githubReviewId = githubReviewId;
+    }
+
+    public Long getIssueCommentId() {
+        return issueCommentId;
+    }
+
+    public void setIssueCommentId(Long issueCommentId) {
+        this.issueCommentId = issueCommentId;
     }
 
     public LocalDateTime getReviewedAt() {

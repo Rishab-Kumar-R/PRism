@@ -3,11 +3,13 @@ package dev.rishabkumar.prism.ai.service;
 import java.util.ArrayList;
 import java.util.List;
 
-class DiffSplitter {
+public final class DiffSplitter {
+
+    private DiffSplitter() {}
 
     private static final String FILE_BOUNDARY = "diff --git ";
 
-    static List<String> splitByFile(String diff) {
+    public static List<String> splitByFile(String diff) {
         List<String> files = new ArrayList<>();
         int start = diff.indexOf(FILE_BOUNDARY);
 
@@ -29,7 +31,7 @@ class DiffSplitter {
         return files;
     }
 
-    static List<String> groupIntoChunks(List<String> fileDiffs, int maxCharsPerChunk) {
+    public static List<String> groupIntoChunks(List<String> fileDiffs, int maxCharsPerChunk) {
         List<String> chunks = new ArrayList<>();
         StringBuilder current = new StringBuilder();
 

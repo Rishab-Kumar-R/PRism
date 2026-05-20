@@ -1,16 +1,17 @@
 package dev.rishabkumar.prism.github.service;
 
+import dev.rishabkumar.prism.ai.model.InlineComment;
 import dev.rishabkumar.prism.exception.DiffFetchException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.kohsuke.github.GHPullRequest;
-import org.kohsuke.github.GHRepository;
+import org.kohsuke.github.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -58,9 +59,28 @@ public class GitHubService {
         return diff;
     }
 
-    public void postReviewComment(GHPullRequest pullRequest, String review) throws IOException {
-        pullRequest.comment(review);
+    public GHIssueComment postReviewComment(GHPullRequest pullRequest, String review) throws IOException {
+        GHIssueComment comment = pullRequest.comment(review);
         Log.infof("Posted review comment on PR #%d", pullRequest.getNumber());
+        return comment;
+    }
+
+    public void markCommentSuperseded(GHPullRequest pullRequest, long commentId) {
+        try {
+            pullRequest.listComments().toList().stream()
+                    .filter(c -> c.getId() == commentId)
+                    .findFirst()
+                    .ifPresent(c -> {
+                        try {
+                            c.update("> This review has been superseded by a newer commit. See the latest review for updated feedback.");
+                            Log.infof("Marked comment %d as superseded on PR #%d", commentId, pullRequest.getNumber());
+                        } catch (IOException e) {
+                            Log.warnf("Could not update comment %d: %s", commentId, e.getMessage());
+                        }
+                    });
+        } catch (Exception e) {
+            Log.warnf("Could not mark comment %d as superseded on PR #%d: %s", commentId, pullRequest.getNumber(), e.getMessage());
+        }
     }
 
     public void applyLabel(GHPullRequest pullRequest, String severity, boolean wasLargePr) throws IOException {
@@ -92,5 +112,51 @@ public class GitHubService {
 
     public String getRepoName(GHRepository repository) {
         return repository.getFullName();
+    }
+
+    public GHPullRequestReview postInlineReview(GHPullRequest pullRequest,
+                                                String commitSha,
+                                                String summary,
+                                                List<InlineComment> inlineComments,
+                                                String diff) throws IOException {
+        DiffPositionMapper mapper = DiffPositionMapper.parse(diff);
+
+        var builder = pullRequest.createReview()
+                .commitId(commitSha)
+                .body(summary)
+                .event(GHPullRequestReviewEvent.COMMENT);
+
+        int added = 0;
+        for (InlineComment c : inlineComments) {
+            int position = mapper.getDiffPosition(c.path(), c.line());
+            if (position < 1) {
+                Log.warnf("Could not map inline comment for %s:%d - skipping", c.path(), c.line());
+                continue;
+            }
+
+            builder.comment(c.body(), c.path(), position);
+            added++;
+        }
+
+        Log.infof("Posted PR review with %d inline comments on PR #%d", added, pullRequest.getNumber());
+        return builder.create();
+    }
+
+    public void dismissPreviousReview(GHPullRequest pullRequest, long reviewId) {
+        try {
+            pullRequest.listReviews().toList().stream()
+                    .filter(r -> r.getId() == reviewId)
+                    .findFirst()
+                    .ifPresent(r -> {
+                        try {
+                            r.dismiss("Superseded by a newer review");
+                            Log.infof("Dismissed previous review %d on PR #%d", reviewId, pullRequest.getNumber());
+                        } catch (IOException e) {
+                            Log.warnf("Failed to dismiss review %d: %s", reviewId, e.getMessage());
+                        }
+                    });
+        } catch (Exception e) {
+            Log.warnf("Could not dismiss previous review %d on PR #%d: %s", reviewId, pullRequest.getNumber(), e.getMessage());
+        }
     }
 }

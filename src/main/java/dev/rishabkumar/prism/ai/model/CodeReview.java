@@ -12,5 +12,7 @@ public record CodeReview(
         int codeQualityCount,
         List<String> highlights,
         String recommendation,
-        String fullReview
-) {}
+        String fullReview,
+        List<InlineComment> inlineComments
+) {
+}

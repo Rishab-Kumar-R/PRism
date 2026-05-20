@@ -2,7 +2,9 @@ package dev.rishabkumar.prism.ai.service;
 
 import dev.rishabkumar.prism.ai.client.CodeReviewAI;
 import dev.rishabkumar.prism.ai.model.CodeReview;
+import dev.rishabkumar.prism.ai.model.InlineComment;
 import dev.rishabkumar.prism.ai.model.ReviewOutcome;
+import dev.rishabkumar.prism.config.model.PrismConfig;
 import dev.rishabkumar.prism.exception.AIReviewException;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +25,10 @@ public class AIReviewService {
 
     public ReviewOutcome review(String diff) {
         return review(diff, null);
+    }
+
+    public ReviewOutcome review(String diff, String previousContext, PrismConfig config) {
+        return review(buildConfigContext(config) + (diff != null ? diff : ""), previousContext);
     }
 
     public ReviewOutcome review(String diff, String previousContext) {
@@ -61,6 +67,25 @@ public class AIReviewService {
 
         Log.infof("AI review completed: score=%d severity=%s", result.score(), result.severity());
         return result;
+    }
+
+    private String buildConfigContext(PrismConfig config) {
+        PrismConfig.ReviewConfig review = config.getReview();
+        if (review.getInstructions().isBlank() && review.getFocus().contains("all")) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        if (!review.getInstructions().isBlank()) {
+            sb.append("Repo instructions: ").append(review.getInstructions()).append("\n");
+        }
+        if (!review.getFocus().contains("all")) {
+            sb.append("Focus on: ").append(String.join(", ", review.getFocus())).append(".\n");
+        }
+        if (!"detailed".equals(review.getTone())) {
+            sb.append("Keep the review ").append(review.getTone()).append(".\n");
+        }
+        sb.append("\n");
+        return sb.toString();
     }
 
     private String buildPrompt(String diff, String previousContext) {
@@ -115,6 +140,12 @@ public class AIReviewService {
             fullReview.append(reviews.get(i).fullReview()).append("\n\n");
         }
 
+        List<InlineComment> mergedInlineComments = reviews.stream()
+                .filter(r -> r.inlineComments() != null)
+                .flatMap(r -> r.inlineComments().stream())
+                .limit(10)
+                .toList();
+
         return new CodeReview(
                 summary,
                 minScore,
@@ -122,7 +153,8 @@ public class AIReviewService {
                 bugs, security, perf, quality,
                 highlights,
                 worst.recommendation(),
-                fullReview.toString().trim()
+                fullReview.toString().trim(),
+                mergedInlineComments
         );
     }
 }
