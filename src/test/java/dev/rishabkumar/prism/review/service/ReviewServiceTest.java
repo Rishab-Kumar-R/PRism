@@ -22,6 +22,8 @@ import org.kohsuke.github.GHRepository;
 import java.io.IOException;
 import java.util.List;
 
+import org.kohsuke.github.GHIssueComment;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -53,10 +55,14 @@ public class ReviewServiceTest {
 
     @BeforeEach
     @Transactional
-    void cleanup() {
+    void cleanup() throws IOException {
         reviewRepository.deleteAll();
         when(rateLimitService.check(anyLong(), anyString())).thenReturn(okLimit());
         doNothing().when(rateLimitService).record(anyLong());
+
+        GHIssueComment mockComment = mock(GHIssueComment.class);
+        when(mockComment.getId()).thenReturn(123L);
+        when(gitHubService.postReviewComment(any(), anyString())).thenReturn(mockComment);
     }
 
     @Test
@@ -67,7 +73,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(eq("diff content"), isNull())).thenReturn(ReviewOutcome.single(codeReview));
+        when(aiReviewService.review(eq("diff content"), isNull(), any())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -110,7 +116,7 @@ public class ReviewServiceTest {
         GHRepository repository = mock(GHRepository.class);
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
-        when(gitHubService.fetchDiff(any())).thenThrow(new RuntimeException("AI down"));
+        when(gitHubService.fetchDiff(any(), any())).thenThrow(new RuntimeException("AI down"));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
