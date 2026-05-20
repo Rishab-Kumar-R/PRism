@@ -32,6 +32,9 @@ import io.quarkiverse.langchain4j.RegisterAiService;
                     - path: exact file path from the diff header (e.g. src/main/java/Foo.java)
                     - line: line number in the new version of the file (right side of diff)
                     - body: concise, actionable comment (1-3 sentences max)
+                    - suggestion: optional replacement code for the flagged line(s). Provide ONLY the
+                      replacement lines as a plain string (no markdown fences). Omit the field or set
+                      null if the fix cannot be expressed as a simple line replacement.
                 Only include comments for genuinely important issues (bugs, security, performance).
                 Maximum 10 inline comments. Empty list if no specific issues.
           </field>

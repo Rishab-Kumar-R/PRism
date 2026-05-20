@@ -134,7 +134,10 @@ public class GitHubService {
                 continue;
             }
 
-            builder.comment(c.body(), c.path(), position);
+            String commentBody = c.suggestion() != null && !c.suggestion().isBlank()
+                    ? c.body() + "\n\n```suggestion\n" + c.suggestion() + "\n```"
+                    : c.body();
+            builder.comment(commentBody, c.path(), position);
             added++;
         }
 
