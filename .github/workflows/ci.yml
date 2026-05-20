@@ -8,7 +8,7 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main ]
     paths:
@@ -16,7 +16,7 @@ on:
       - 'build.gradle.kts'
       - 'settings.gradle.kts'
       - 'gradle.properties'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/**'
 
 jobs:
   test:
