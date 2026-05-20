@@ -298,16 +298,27 @@ public class ReviewService {
                 reviewMetrics.recordSkipped("duplicate-webhook");
             } else {
                 long duration = System.currentTimeMillis() - startMs;
+                captureReviewError(e, repoName, prNumber, installationId);
                 Log.errorf(e, "[%s#%d] Review failed after %dms - posting fallback comment", repoName, prNumber, duration);
                 reviewMetrics.recordError(repoName, duration);
                 gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
             }
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startMs;
+            captureReviewError(e, repoName, prNumber, installationId);
             Log.errorf(e, "[%s#%d] Review failed after %dms - posting fallback comment", repoName, prNumber, duration);
             reviewMetrics.recordError(repoName, duration);
             gitHubService.postReviewComment(pullRequest, "AI review is temporarily unavailable. Please try again later.");
         }
+    }
+
+    private void captureReviewError(Exception e, String repoName, int prNumber, long installationId) {
+        io.sentry.Sentry.withScope(scope -> {
+            scope.setTag("repo", repoName);
+            scope.setTag("pr", String.valueOf(prNumber));
+            scope.setTag("installation", String.valueOf(installationId));
+            io.sentry.Sentry.captureException(e);
+        });
     }
 
     private String buildReviewComment(String fullReview, RateLimitResult limit) {

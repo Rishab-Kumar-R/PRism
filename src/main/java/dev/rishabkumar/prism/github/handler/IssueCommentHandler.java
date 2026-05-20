@@ -8,6 +8,7 @@ import dev.rishabkumar.prism.review.service.ConversationService;
 import dev.rishabkumar.prism.review.service.ReviewService;
 import io.quarkiverse.githubapp.event.IssueComment;
 import io.quarkus.logging.Log;
+import io.sentry.Sentry;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kohsuke.github.GHEventPayload;
@@ -73,6 +74,7 @@ public class IssueCommentHandler {
                 try {
                     conversationService.answer(pullRequest, repository, question, installationId, accountName);
                 } catch (Exception e) {
+                    Sentry.captureException(e);
                     Log.errorf(e, "[PR #%d] Async /review ask failed", prNumber);
                     try {
                         gitHubService.postReviewComment(pullRequest,
@@ -96,6 +98,7 @@ public class IssueCommentHandler {
                 try {
                     conversationService.answer(pullRequest, repository, question, installationId, accountName);
                 } catch (Exception e) {
+                    Sentry.captureException(e);
                     Log.errorf(e, "[PR #%d] Async @prism mention failed", prNumber);
                     try {
                         gitHubService.postReviewComment(pullRequest,
@@ -113,6 +116,7 @@ public class IssueCommentHandler {
                 try {
                     reviewService.reviewManual(pullRequest, repository, installationId, accountName);
                 } catch (Exception e) {
+                    Sentry.captureException(e);
                     Log.errorf(e, "[PR #%d] Async /review failed", prNumber);
                 }
             });
@@ -148,6 +152,7 @@ public class IssueCommentHandler {
                 try {
                     reviewService.reset(pullRequest, repository);
                 } catch (Exception e) {
+                    Sentry.captureException(e);
                     Log.errorf(e, "[PR #%d] Async /review reset failed", prNumber);
                 }
             });
@@ -155,6 +160,7 @@ public class IssueCommentHandler {
                 try {
                     summaryService.summarize(pullRequest, repository, installationId, accountName);
                 } catch (Exception e) {
+                    Sentry.captureException(e);
                     Log.errorf(e, "[PR #%d] Async /summary failed", prNumber);
                 }
             });

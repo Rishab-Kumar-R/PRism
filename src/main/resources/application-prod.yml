@@ -27,3 +27,6 @@ quarkus:
     info-title: PRism API
     info-version: 1.0.0
     info-description: AI-powered GitHub PR review API
+
+sentry:
+  dsn: ${SENTRY_DSN:}

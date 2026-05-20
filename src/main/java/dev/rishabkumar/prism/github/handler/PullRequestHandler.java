@@ -4,6 +4,7 @@ import dev.rishabkumar.prism.ai.service.WalkthroughService;
 import dev.rishabkumar.prism.review.service.ReviewService;
 import io.quarkiverse.githubapp.event.PullRequest;
 import io.quarkus.logging.Log;
+import io.sentry.Sentry;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kohsuke.github.GHEventPayload;
@@ -29,6 +30,7 @@ public class PullRequestHandler {
             try {
                 walkthroughService.walkthrough(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "Async walkthrough failed for PR #%d", pullRequest.getNumber());
             }
         });
@@ -37,6 +39,7 @@ public class PullRequestHandler {
             try {
                 reviewService.review(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
             }
         });
@@ -52,6 +55,7 @@ public class PullRequestHandler {
             try {
                 walkthroughService.walkthrough(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "Async walkthrough failed for PR #%d", pullRequest.getNumber());
             }
         });
@@ -60,6 +64,7 @@ public class PullRequestHandler {
             try {
                 reviewService.review(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
             }
         });
@@ -75,6 +80,7 @@ public class PullRequestHandler {
             try {
                 reviewService.review(pullRequest, repository, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
             }
         });

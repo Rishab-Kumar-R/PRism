@@ -31,6 +31,7 @@ dependencies {
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     implementation("io.quarkus:quarkus-cache")
     implementation("io.quarkus:quarkus-smallrye-openapi")
+    implementation("io.sentry:sentry:8.42.0")
     testImplementation("io.quarkus:quarkus-junit5")
     testImplementation("io.quarkiverse.githubapp:quarkus-github-app-testing:2.14.1")
     testImplementation("io.quarkus:quarkus-junit5-mockito")

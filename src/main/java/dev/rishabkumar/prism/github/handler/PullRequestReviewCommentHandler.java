@@ -4,6 +4,7 @@ import dev.rishabkumar.prism.github.service.GitHubService;
 import dev.rishabkumar.prism.review.service.ConversationService;
 import io.quarkiverse.githubapp.event.PullRequestReviewComment;
 import io.quarkus.logging.Log;
+import io.sentry.Sentry;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.context.ManagedExecutor;
 import org.kohsuke.github.GHEventPayload;
@@ -57,6 +58,7 @@ public class PullRequestReviewCommentHandler {
             try {
                 conversationService.answerInThread(pullRequest, repository, question, comment, threadContext, installationId, accountName);
             } catch (Exception e) {
+                Sentry.captureException(e);
                 Log.errorf(e, "[PR #%d] Async @prism inline reply failed", prNumber);
                 try {
                     comment.reply("Sorry, I could not answer that right now. Please try again.");
