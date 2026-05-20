@@ -1,8 +1,12 @@
 package dev.rishabkumar.prism.review.service;
 
 import dev.rishabkumar.prism.ai.model.CodeReview;
+import dev.rishabkumar.prism.ai.model.InlineComment;
 import dev.rishabkumar.prism.ai.model.ReviewOutcome;
 import dev.rishabkumar.prism.ai.service.AIReviewService;
+import dev.rishabkumar.prism.ai.service.DiffFilter;
+import dev.rishabkumar.prism.config.model.PrismConfig;
+import dev.rishabkumar.prism.config.service.RepoConfigService;
 import dev.rishabkumar.prism.exception.PrAlreadyPausedException;
 import dev.rishabkumar.prism.exception.PrNotPausedException;
 import dev.rishabkumar.prism.exception.ReviewNotFoundException;
@@ -26,7 +30,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.kohsuke.github.GHIssueComment;
 import org.kohsuke.github.GHPullRequest;
+import org.kohsuke.github.GHPullRequestReview;
 import org.kohsuke.github.GHRepository;
 
 import java.io.IOException;
@@ -61,6 +67,9 @@ public class ReviewService {
     @Inject
     RateLimitService rateLimitService;
 
+    @Inject
+    RepoConfigService repoConfigService;
+
     @Transactional
     public void pause(GHPullRequest pullRequest, GHRepository repository) throws IOException {
         String repoName = gitHubService.getRepoName(repository);
@@ -74,7 +83,16 @@ public class ReviewService {
         pausedPrRepository.persist(new PausedPr(repoName, prNumber));
         Log.infof("[%s#%d] Auto-review paused", repoName, prNumber);
         gitHubService.postReviewComment(pullRequest,
-                "Auto-review paused for this PR. PRism will no longer review new commits automatically.\n\nUse `/review resume` to re-enable, or `/review` to trigger a manual review.");
+                """
+                Auto-review paused for this PR. PRism will no longer review new commits automatically.
+
+                **Available commands:**
+                - `/review` - trigger a manual review
+                - `/review resume` - re-enable auto-review
+                - `/review reset` - clear review history for a fresh full-diff review
+                - `/review ask <question>` or `@prism <question>` - ask a question about this PR
+                - `/summary` - generate a plain-English summary of the changes
+                """);
     }
 
     @Transactional
@@ -182,6 +200,10 @@ public class ReviewService {
             return;
         }
 
+        PrismConfig config = repoConfigService.getConfig(repoName, repository);
+
+        Optional<ReviewRecord> previousRecord = reviewRepository.findLatestByPr(repoName, prNumber);
+
         LocalDateTime notBefore = prResetRepository.findLatestReset(repoName, prNumber)
                 .orElse(LocalDateTime.MIN);
         Optional<PreviousReviewContext> previousReview = reviewRepository.findLatestContextByPr(repoName, prNumber, notBefore);
@@ -215,9 +237,18 @@ public class ReviewService {
 
         try {
             String diff = gitHubService.fetchDiff(pullRequest, baseSha);
+            String filteredDiff = DiffFilter.apply(diff, config.getReview().getIgnore());
 
-            Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, diff.length());
-            ReviewOutcome outcome = aiReviewService.review(diff, previousContext);
+            previousRecord.ifPresent(prev -> {
+                if (prev.getGithubReviewId() != null) {
+                    gitHubService.dismissPreviousReview(pullRequest, prev.getGithubReviewId());
+                } else if (prev.getIssueCommentId() != null) {
+                    gitHubService.markCommentSuperseded(pullRequest, prev.getIssueCommentId());
+                }
+            });
+
+            Log.infof("[%s#%d] Sending %d chars to AI", repoName, prNumber, filteredDiff.length());
+            ReviewOutcome outcome = aiReviewService.review(filteredDiff, previousContext, config);
 
             if (outcome == null) {
                 Log.warnf("[%s#%d] AI returned null review - posting fallback comment", repoName, prNumber);
@@ -229,10 +260,7 @@ public class ReviewService {
             CodeReview codeReview = outcome.review();
             rateLimitService.record(installationId);
 
-            String reviewComment = buildReviewComment(codeReview.fullReview(), limitResult);
-            gitHubService.postReviewComment(pullRequest, reviewComment);
-
-            gitHubService.applyLabel(pullRequest, codeReview.severity(), outcome.chunked());
+            String reviewBody = buildReviewComment(codeReview.fullReview(), limitResult);
 
             ReviewRecord record = new ReviewRecord(
                     repoName, prNumber, pullRequest.getTitle(), commitSha,
@@ -241,6 +269,19 @@ public class ReviewService {
                     codeReview.performanceCount(), codeReview.codeQualityCount(),
                     codeReview.recommendation(), codeReview.fullReview()
             );
+
+            List<InlineComment> inlineComments = codeReview.inlineComments();
+            if (inlineComments != null && !inlineComments.isEmpty()) {
+                GHPullRequestReview ghReview = gitHubService.postInlineReview(
+                        pullRequest, commitSha, reviewBody, inlineComments, diff);
+                record.setGithubReviewId(ghReview.getId());
+            } else {
+                GHIssueComment comment = gitHubService.postReviewComment(pullRequest, reviewBody);
+                record.setIssueCommentId(comment.getId());
+            }
+
+            gitHubService.applyLabel(pullRequest, codeReview.severity(), outcome.chunked());
+
             reviewRepository.persist(record);
             invalidateStatsCache();
 
