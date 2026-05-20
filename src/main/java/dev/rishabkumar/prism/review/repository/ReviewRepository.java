@@ -106,19 +106,24 @@ public class ReviewRepository implements PanacheRepository<ReviewRecord> {
     public Optional<PreviousReviewContext> findLatestContextByPr(String repoName, int prNumber,
                                                                   java.time.LocalDateTime notBefore) {
         try {
-            Object[] row = (Object[]) getEntityManager()
-                    .createQuery(
-                            "SELECT r.commitSha, r.score, r.severity, r.bugCount, " +
-                            "r.securityCount, r.performanceCount, r.recommendation " +
-                            "FROM ReviewRecord r " +
-                            "WHERE r.repoName = :repoName AND r.prNumber = :prNumber " +
-                            "AND r.reviewedAt > :notBefore " +
-                            "ORDER BY r.reviewedAt DESC")
+            boolean filterByDate = notBefore != null && !notBefore.equals(java.time.LocalDateTime.MIN);
+            String jpql = "SELECT r.commitSha, r.score, r.severity, r.bugCount, " +
+                    "r.securityCount, r.performanceCount, r.recommendation " +
+                    "FROM ReviewRecord r " +
+                    "WHERE r.repoName = :repoName AND r.prNumber = :prNumber " +
+                    (filterByDate ? "AND r.reviewedAt > :notBefore " : "") +
+                    "ORDER BY r.reviewedAt DESC";
+
+            var query = getEntityManager().createQuery(jpql)
                     .setParameter("repoName", repoName)
                     .setParameter("prNumber", prNumber)
-                    .setParameter("notBefore", notBefore)
-                    .setMaxResults(1)
-                    .getSingleResult();
+                    .setMaxResults(1);
+
+            if (filterByDate) {
+                query.setParameter("notBefore", notBefore);
+            }
+
+            Object[] row = (Object[]) query.getSingleResult();
             return Optional.of(new PreviousReviewContext(
                     (String) row[0],
                     ((Number) row[1]).intValue(),

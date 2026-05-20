@@ -2,6 +2,7 @@ package dev.rishabkumar.prism.review.resource;
 
 import dev.rishabkumar.prism.review.model.ReviewRecord;
 import dev.rishabkumar.prism.review.repository.ReviewRepository;
+import dev.rishabkumar.prism.review.service.ReviewService;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import jakarta.transaction.UserTransaction;
@@ -20,6 +21,9 @@ public class ReviewResourceTest {
     ReviewRepository reviewRepository;
 
     @Inject
+    ReviewService reviewService;
+
+    @Inject
     UserTransaction userTransaction;
 
     private static final String VALID_API_KEY = "test-api-key";
@@ -30,6 +34,7 @@ public class ReviewResourceTest {
         userTransaction.begin();
         reviewRepository.deleteAll();
         userTransaction.commit();
+        reviewService.invalidateStatsCache();
     }
 
     @Test

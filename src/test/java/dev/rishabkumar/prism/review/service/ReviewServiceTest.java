@@ -86,7 +86,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(aiReviewService, never()).review(anyString(), any());
+        verify(aiReviewService, never()).review(anyString(), any(), any());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class ReviewServiceTest {
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
         verify(gitHubService, never()).fetchDiff(any());
-        verify(aiReviewService, never()).review(anyString(), any());
+        verify(aiReviewService, never()).review(anyString(), any(), any());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
+        when(aiReviewService.review(anyString(), isNull(), any())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -148,7 +148,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
+        when(aiReviewService.review(anyString(), isNull(), any())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -163,7 +163,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.chunked(codeReview));
+        when(aiReviewService.review(anyString(), isNull(), any())).thenReturn(ReviewOutcome.chunked(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
@@ -180,7 +180,7 @@ public class ReviewServiceTest {
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
-        verify(aiReviewService, never()).review(anyString(), any());
+        verify(aiReviewService, never()).review(anyString(), any(), any());
         verify(gitHubService).postReviewComment(eq(pullRequest), anyString());
     }
 
@@ -192,7 +192,7 @@ public class ReviewServiceTest {
 
         when(gitHubService.getRepoName(repository)).thenReturn("repo/a");
         when(gitHubService.fetchDiff(any(), isNull())).thenReturn("diff content");
-        when(aiReviewService.review(anyString(), isNull())).thenReturn(ReviewOutcome.single(codeReview));
+        when(aiReviewService.review(anyString(), isNull(), any())).thenReturn(ReviewOutcome.single(codeReview));
 
         reviewService.review(pullRequest, repository, INSTALLATION_ID, ACCOUNT_NAME);
 
