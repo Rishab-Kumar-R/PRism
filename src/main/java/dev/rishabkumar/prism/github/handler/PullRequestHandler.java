@@ -42,6 +42,29 @@ public class PullRequestHandler {
         });
     }
 
+    void onPullRequestReadyForReview(@PullRequest.ReadyForReview GHEventPayload.PullRequest payload) {
+        var pullRequest = payload.getPullRequest();
+        var repository = payload.getRepository();
+        long installationId = extractInstallationId(payload);
+        String accountName = extractAccountName(payload);
+
+        executor.submit(() -> {
+            try {
+                walkthroughService.walkthrough(pullRequest, repository, installationId, accountName);
+            } catch (Exception e) {
+                Log.errorf(e, "Async walkthrough failed for PR #%d", pullRequest.getNumber());
+            }
+        });
+
+        executor.submit(() -> {
+            try {
+                reviewService.review(pullRequest, repository, installationId, accountName);
+            } catch (Exception e) {
+                Log.errorf(e, "Async review failed for PR #%d", pullRequest.getNumber());
+            }
+        });
+    }
+
     void onPullRequestSynchronized(@PullRequest.Synchronize GHEventPayload.PullRequest payload) {
         var pullRequest = payload.getPullRequest();
         var repository = payload.getRepository();
