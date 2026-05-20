@@ -1,0 +1,11 @@
+review:
+  ignore:
+    - "**/*.lock"
+    - "**/migrations/**"
+  focus:
+    - "security"
+    - "performance"
+  tone: "concise"
+  instructions: |
+    This project follows Google Java Style Guide.
+    Flag any missing null checks on public API inputs.
