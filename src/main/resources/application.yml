@@ -1,4 +1,10 @@
 quarkus:
+  quinoa:
+    ui-dir: src/main/webui
+    enable-spa-routing: true
+    package-manager: npm
+    dev-server:
+      port: 5173
   github-app:
     app-id: ${GITHUB_APP_ID}
     private-key: ${GITHUB_APP_PRIVATE_KEY}
