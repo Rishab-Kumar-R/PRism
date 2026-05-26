@@ -1,4 +1,7 @@
-const API_KEY = import.meta.env.VITE_API_KEY ?? ''
+const API_KEY = import.meta.env.VITE_API_KEY;
+if (!API_KEY) {
+  throw new Error('VITE_API_KEY environment variable is required for API authentication');
+}
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, {
